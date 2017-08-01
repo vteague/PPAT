@@ -9,7 +9,7 @@ email : firstname.lastname@uclouvain.be
 """
 
 import field
-#import gmpy
+import gmpy2 as gmpy
 import tools.fingexp as fingexp
 
 class ECGroup(fingexp.FingExp):
@@ -449,3 +449,6 @@ class ECPoint:
             print "Point over the Elliptic Curve Group = ",self.ECG," of Jacobian coordinates \n x = ",self.x,"\n y = ",self.y,"\n z =",self.z
         else :
             print "Point over the Elliptic Curve Group = ",self.ECG," of coordinates \n x = ",self.x,"\n y = ",self.y
+
+    def __hash__(self):
+        return hash(self.__str__())

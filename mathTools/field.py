@@ -9,7 +9,7 @@ email : firstname.lastname@uclouvain.be
 """
 
 from numpy import *
-import gmpy
+import gmpy2 as gmpy
 from Crypto.Random.random import randint
 import random as rd
 import tools.fingexp as fingexp
@@ -326,7 +326,9 @@ class FieldElem():
 
     def jsonable(self):
         return {'type': 'FieldElem', 'F': self.F, 'val': self.val}
-
+    
+    def __hash__(self):
+        return hash(self.jsonable()[2])
 
 class ExtensionField(Field):
     '''
@@ -968,6 +970,9 @@ class ExtensionFieldElem(FieldElem):
 
     def jsonable(self):
         return {'type': 'ExtensionFieldElem', 'F': self.F, 'poly': self.poly, 'size': self.siz}
+
+    def __hash__(self):
+        return hash(self.siz)
 
 class polynom:
     ''' This class represents a polynomial written P = c_nX**n+...c_1X+c_0
