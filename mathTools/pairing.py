@@ -9,7 +9,7 @@ email : firstname.lastname@uclouvain.be
 """
 
 import field
-import gmpy
+import gmpy2 as gmpy
 import tools.fingexp as fingexp
 import tools.utils as utils
 

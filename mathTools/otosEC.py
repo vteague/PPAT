@@ -49,7 +49,7 @@ explicit formulas for computing pairings over ordinary curves Advances in
 Cryptology--EUROCRYPT 2011, Springer, 2011, 48-68
 """
 
-import gmpy
+import gmpy2 as gmpy
 import ellipticCurve
 import tools.utils as utils
 import field

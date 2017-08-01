@@ -13,8 +13,8 @@
 #limitations under the License.
 
 # -*- coding: utf-8 -*-
-import sys
-sys.path.append('C:\Research\STAR Vote\PPAT-master')
+#import sys
+#sys.path.append('C:\Research\STAR Vote\PPAT-master')
 
 import time
 import numpy as np
@@ -343,7 +343,7 @@ def make_ECtable(Group,point):
     #logarithims to speed up decryption of multiple messages encrypted with the
     #same public/private key
  
-   baby_steps = {}    
+    baby_steps = {}    
     pt = point    
     
     for j in range(2**16):
