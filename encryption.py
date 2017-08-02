@@ -419,11 +419,11 @@ print Dec_src(sk,pk,C0_src,ECtable)
 print Dec_src(sk,pk,C1_src,ECtable)
 print 'Dec_src Complete'
 t2 = time.clock()
-print (t2-t1)/60
+print "Source decryption time:", (t2-t1), "seconds."
 
 t3 = time.clock()
 print Dec_tgt(sk, pk, C0_tgt,Ftable)
 print Dec_tgt(sk, pk, C1_tgt,Ftable)
 print 'Dec_tgt Complete'
 t4 = time.clock()
-print (t4-t3)/60
+print "Target decryption time:", (t4-t3), "seconds."
