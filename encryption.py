@@ -232,8 +232,10 @@ def Add_src(pk,C,C_prime):
     G1 = pk['G1']
     H1 = pk['H1']
     
-    g1 = (G1[0]*randint(1,int(n)),G1[1]*randint(1,int(n)))
-    h1 = (H1[0]*randint(1,int(n)),H1[1]*randint(1,int(n)))
+    a = randint(1, int(n))
+    b = randint(1, int(n))
+    g1 = (G1[0]*a,G1[1]*a)
+    h1 = (H1[0]*b,H1[1]*b)
 
     C_0 = ((C_prime['C0'][0]+g1[0])+C['C0'][0],(C_prime['C0'][1]+g1[1])+C['C0'][1])
     C_1 = ((C_prime['C1'][0]+h1[0])+C['C1'][0],(C_prime['C1'][1]+h1[1])+C['C1'][1])
@@ -251,11 +253,13 @@ def Add_tgt(pk,C,C_prime):
     
     g = pk['g']
     h = pk['h']    
+    a = randint(1,int(p))
+    b = randint(1,int(p))
     
     #e(g,h1):
-    g1 = (e_hat(g,(H1[0]*randint(1,int(p))),Pair),e_hat(g,(H1[1]*randint(1,int(p))),Pair),Gt.one())
+    g1 = (e_hat(g,(H1[0]*a),Pair),e_hat(g,(H1[1]*a),Pair),Gt.one())
     #e(g1,h):
-    h1 = (e_hat((G1[0]*randint(1,int(p))),h,Pair),e_hat((G1[1]*randint(1,int(p))),h,Pair),Gt.one())
+    h1 = (e_hat((G1[0]*b),h,Pair),e_hat((G1[1]*b),h,Pair),Gt.one())
     
     C0 = C['C0']*C_prime['C0']*g1[0]*h1[0]
     C1 = C['C1']*C_prime['C1']*g1[1]*h1[1]
