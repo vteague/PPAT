@@ -324,13 +324,20 @@ def make_ECtable(Group,point):
     #logarithims to speed up decryption of multiple messages encrypted with the
     #same public/private key
  
+#VT: I edited this to make it terminate at exactly the index it previously did. 
+# However, I'd assume that the omission of the j=2**16 + 1 case makes no 
+# difference so we should just let the range terminate at 2**16 as before.
+# But I'm reluctant to fiddle in case I mess up something important.
+
     baby_steps = {}    
     pt = point    
     
-    for j in xrange(2**16):
+    for j in xrange(2**16+1):
+        baby_steps[pt] = j+1
         pt = pt+point        
-        baby_steps[pt] = j+2
-        
+
+       
+
     return baby_steps
     
 def make_Ftable(Field,elt):
@@ -371,8 +378,11 @@ print 'Setup Complete'
 pk,sk = KeyGen(pp)
 print 'KeyGen Complete'
 
-M0 = 123
-M1 = 2**30
+#M0 = 123
+#M1 = 2**30
+
+M0 = 1
+M1 = 1
 
 C0_src = Enc_src(pk,M0)
 C1_src = Enc_src(pk,M1)
