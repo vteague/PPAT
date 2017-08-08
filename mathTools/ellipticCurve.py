@@ -47,7 +47,7 @@ class ECGroup(fingexp.FingExp):
            if both x,y are None, return a random element of the curve
         '''
         if not x == None and not y == None:
-            if isinstance(x,field.FieldElem) and isinstance(x,field.FieldElem) :
+            if isinstance(x,field.FieldElem) and isinstance(y,field.FieldElem) :
                 return ECPoint(x,y,z,ECG=self,infty=False,Jcoord=Jcoord)
             else:
                 return ECPoint(field.FieldElem(x,self.F),field.FieldElem(y,self.F),field.FieldElem(z,self.F),ECG=self,infty=False,Jcoord=Jcoord)
