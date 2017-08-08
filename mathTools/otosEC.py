@@ -38,7 +38,7 @@ precomputation is available.
 
 References:
 [1] Haustenne, L.; De Neyer, Q.; Pereira, O. & others Elliptic Curve Cryptography
-in JavaScript. IACR Cryptology ePrint Archive, 2011, 2011, 654
+in JavaScript. IACR Cryp tology ePrint Archive, 2011, 2011, 654
 
 [2] Pereira, G. C.; Simplicio Jr, M. A.; Naehrig, M. & Barreto, P. S. A family of
 implementation-friendly BN elliptic curves Journal of Systems and Software,
@@ -124,6 +124,26 @@ def dbleAndAdd(ECG,P,alpha,addition,doubling,Jcoord = False):
     elif alpha%2 == 0 :
         Q = dbleAndAdd(ECG,P,alpha/2,addition,doubling,Jcoord)
         return doubling(ECG,Q,Jcoord)
+
+def squareAndMultiplyFp12(F,x,u,multiply,square,tab=None):
+    ''' Return x**u using square and multiply
+    - assuming x is a tuple that belongs to Fp12 and u is positive integer
+    - multiply is the multiplication algorithm
+    - square is the squaring algorithm
+    - this version is more memory efficient than squareAndMultiply, avoiding recursion
+    '''
+    y = (1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+    if u == 0 :
+        return y
+    while u > 1:
+        if u % 2 == 0 :
+            x = square(F, x, tab)
+            u = u / 2
+        else:
+            y = multiply(F, x, y, tab)
+            x = square(F, x, tab)
+            u = (u - 1) / 2
+    return multiply(F, x, y, tab)
 
 def squareAndMultiply(F,x,u,multiply,square,tab=None):
     ''' Return x**u using square and multiply
@@ -576,7 +596,7 @@ def addEFp2(ECG,P1,P2,Jcoord=False):
             else :
                 return daddEFp2(ECG,P1,P2,Jcoord=Jcoord)
 
-def daddEFp2(ECG,P1,P2,tab=None,Jcoord=False):
+def daddEFp2(ECG,P1,P2,Jcoord=False,tab=None):
     '''
 	This method returns Q=P1+P2
 	- ECG is an EC curve group
@@ -661,7 +681,7 @@ def daddEFp2(ECG,P1,P2,tab=None,Jcoord=False):
 
         return Xq0,Xq1,Yq0,Yq1,Qinf
 
-def doubleEFp2(ECG,P,tab=None,Jcoord=False):
+def doubleEFp2(ECG,P,Jcoord=False,tab=None):
     '''
 	This method returns Q=[2]P
 	- ECG is an EC curve
@@ -688,7 +708,7 @@ def doubleEFp2(ECG,P,tab=None,Jcoord=False):
         c = gmpy.invert(a0**2+a1**2,p)
         return a0*c,-a1*c
 
-    if Jcoord :
+    if Jcoord:
         Xp0,Xp1,Yp0,Yp1,Zp0,Zp1 = P
         if (Zp0 == 0 and Zp1 == 0) or (Yp0 == 0 and Yp1 == 0):
             # P is the point at infinity or P is on the x-axis => [2]P1 = O
@@ -1238,7 +1258,7 @@ def hardexpo(Fpk,m,gamma,frob,intuple=False):
     u = g[6]
     mul = mulFp12
     sqrt = sqrtFp12
-    sqmu = squareAndMultiply
+    sqmu = squareAndMultiplyFp12
     if intuple :
         mul = tmulFp12
         sqrt = tsqrtFp12
@@ -1248,7 +1268,7 @@ def hardexpo(Fpk,m,gamma,frob,intuple=False):
     else :
         mul = mulFp12
         sqrt = sqrtFp12
-        invm = Fpk.invert(mt)
+        invm = Fpk.invert(mt) #TODO: seems that mt is undefined in this branch
     if u<0:
         m1 = sqmu(Fpk,invm,-u,mul,sqrt,g) # 1/(m**(-u)) = m**u
         invm1 = sqmu(Fpk,m,-u,mul,sqrt,g) # m**(-u) = 1/m**u
@@ -1307,7 +1327,7 @@ def OptimTatePairing(P,Q,Pair):
     g = Pair.gamma
     mul = mulFp12
     sqrt = sqrtFp12
-    sqmu = squareAndMultiply
+    sqmu = squareAndMultiplyFp12
     Fp6 = Fpk.F
     Fp2 = Fp6.F
     f02 = Fp2.zero()
@@ -1520,12 +1540,5 @@ def OptimAtePairing(P,Q,Pair,Jcoord=False):
     y = hardexpo(Fpk,x2,g,frob,True)
 
     return y
-
-
-
-
-
-
-
 
 
