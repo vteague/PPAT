@@ -26,7 +26,11 @@ import ppat.ppats
 import mathTools.otosEC as oEC
 import gmpy2 as gmpy
 from Crypto.Random.random import randint
+from Crypto.Random.random import getrandbits
 from mathTools.otosEC import OptimAtePairing as e_hat    
+
+# maximum size in bits of secret
+MAX_BITS = 100
 
 range = lambda stop: iter(itertools.count().next, stop) # Range for iterating over large numbers (larger than int)
 
@@ -126,7 +130,7 @@ def KeyGen(pp):
     
     G = pp['G'] # Representation of G
     H = pp['H'] # Representation of H    
-    s = randint(1,int(pp['p']))
+    s = getrandbits(MAX_BITS)
     
     P1 = P*randint(0,int(n))     
     G1 = (G.neg(P1)*s,P1) # Description of G1 - (g^{-s},g)
@@ -136,8 +140,10 @@ def KeyGen(pp):
     
     Gt=pp['Gt']   
     
-    g = P*randint(0,int(n)) # Random element of G
-    h = Q*randint(0,int(n))# Random element of H
+    #g = P*randint(0,int(n)) # Random element of G
+    #h = Q*randint(0,int(n))# Random element of H
+    g = P1
+    h = Q1
 
     e = e_hat(g,h,Pair)    
     
@@ -215,13 +221,15 @@ def Multiply_src(pk,C0,C1):
     
     g = pk['g']
     h = pk['h']  
+    a = randint(1,int(p))
+    b = randint(1,int(p))
     
     #e(C0,C1):
     eC = (e_hat(C0[0],C1[0],Pair),e_hat(C0[0],C1[1],Pair)*e_hat(C0[1],C1[0],Pair),e_hat(C0[1],C1[1],Pair)) 
     #e(g,h1):
-    g1 = (e_hat(g,H1[0]*randint(1,int(p)),Pair),e_hat(g,H1[1]*randint(1,int(p)),Pair),Gt.one())
+    g1 = (e_hat(g,H1[0]*a,Pair),e_hat(g,H1[1]*a,Pair),Gt.one())
     #e(g1,h):
-    h1 = (e_hat(G1[0]*randint(1,int(p)),h,Pair),e_hat(G1[1]*randint(1,int(p)),h,Pair),Gt.one())
+    h1 = (e_hat(G1[0]*b,h,Pair),e_hat(G1[1]*b,h,Pair),Gt.one())
     
     C = {'C0':(eC[0]*g1[0])*h1[0],'C1':eC[1]*(g1[1]*h1[1]),'C2':eC[2]}
     
@@ -419,6 +427,7 @@ print (t2-t1)/60
 t3 = time.clock()
 print Dec_tgt(sk, pk, C0_tgt)
 print Dec_tgt(sk, pk, C1_tgt,Ftable)
+print Dec_tgt(sk, pk, CM,Ftable)
 print 'Dec_tgt Complete'
 t4 = time.clock()
 print (t4-t3)/60
