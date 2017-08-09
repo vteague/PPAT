@@ -84,6 +84,36 @@ Pair = pairing.Pairing(EFp, EFp12, C, P, Q, n, Qpr, oEC.frobenius, gamma)
 gt = e_hat(P, Q, Pair)
 
 r = randint(0, int(n - 1))
+gtr = gt ** r
+
+rgp = (randint(0, int(n - 1)) * P, randint(0, int(n - 1)) * P)
+rhp = (randint(0, int(n - 1)) * Q, randint(0, int(n - 1)) * Q)
+
+def en(g, h):
+    """Evaluates the bilinear operator on pairs of elements of G and H.
+    Arguments:
+        g, a pair of elements of EFp
+        h, a pair of elements of EFp2
+    Returns a triple of elements of Fp12
+    """
+    r0 = e_hat(g[0], h[0], Pair)
+    r1 = e_hat(g[0], h[1], Pair) * e_hat(g[1], h[0], Pair)
+    r2 = e_hat(g[1], h[1], Pair)
+    return (r0, r1, r2)
+
+def e(g, h):
+    """Evaluates the bilinear operator on pairs of elements of G and H.
+    Uses Karatsuba's trick
+    Arguments:
+        g, a pair of elements of EFp
+        h, a pair of elements of EFp2
+    Returns a triple of elements of Fp12
+    """
+    r0 = e_hat(g[0], h[0], Pair)
+    r2 = e_hat(g[1], h[1], Pair)
+    r1 = e_hat(g[0] + g[1], h[0] + h[1], Pair) * Fp12.invert(r0 *r2)
+
+    return (r0, r1, r2)
 
 
 class TestFieldOp(unittest.TestCase):
@@ -127,6 +157,14 @@ class TestFieldOp(unittest.TestCase):
         self.assertEqual(oEC.toFp12elem(Fp12, tgtr), gt ** r,
                          'Optimised Fp12 exp gives inconsistent results')
 
+    def test_InvFp12(self):
+        igtr = Fp12.invert(gtr)
+
+        t = time.time() - self.startTime
+        print "%s: %.4f" % ("Fp12 point inversion -- generic", t)
+        self.assertEqual(igtr * gtr , Fp12.one(),
+                         'Inversion in Fp12 does not work')
+
     def test_pairing(self):
         _ = e_hat(P, Q, Pair)
         t = time.time() - self.startTime
@@ -138,6 +176,16 @@ class TestFieldOp(unittest.TestCase):
         gta3 = gt ** r
         self.assertEqual(gta1, gta3, 'Not bilinear wrt G1')
         self.assertEqual(gta2, gta3, 'Not bilinear wrt G2')
+
+    def test_ppairing(self):
+        gt1 = en(rgp, rhp)
+        t = time.time() - self.startTime
+        print "%s: %.4f" % ("pairing on pairs -- generic", t)
+        t1 = time.time()
+        gt2 = e(rgp, rhp)
+        t = time.time() - t1
+        print "%s: %.4f" % ("pairing on pairs -- Karatsuba", t)
+        self.assertEqual(gt1, gt2, 'pairing on pairs seems inconsistent')
 
 
 if __name__ == '__main__':
