@@ -121,6 +121,20 @@ Pair = pairing.Pairing(EFp,EFp12,C,P,Q,n,Qpr,oEC.frobenius,oEC.prec_gamma(Fp12,u
 ############### Crypto Functions #############
 Gamma = oEC.prec_gamma(Fp12,u,c,d)
 
+def e(g, h):
+    """Evaluates the bilinear operator on pairs of elements of G and H.
+    Uses Karatsuba's trick.
+    Arguments:
+        pp, the public parameters describing the groups
+        g, a pair of elements of G
+        h, a pair of elements of H
+    Returns a triple of elements of Gt
+    """
+    r0 = e_hat(g[0], h[0], Pair)
+    r2 = e_hat(g[1], h[1], Pair)
+    r1 = e_hat(g[0] + g[1], h[0] + h[1], Pair) * pp['Gt'].invert(r0 * r2)
+    return (r0, r1, r2)
+
 def Setup():
     
     pp={'p': p, 'G': EFp, 'H': EFp2,'Gt': Fp12,'e': e_hat}
@@ -145,9 +159,9 @@ def KeyGen(pp):
     g = P1
     h = Q1
 
-    e = e_hat(g,h,Pair)    
+    gt = e_hat(g,h,Pair)
     
-    pk = {'G':G,'G1':G1,'H':H,'H1':H1,'Gt':Gt,'g':g,'h':h, 'e':e}
+    pk = {'G':G,'G1':G1,'H':H,'H1':H1,'Gt':Gt,'g':g,'h':h, 'e':gt}
 
     def pi_1(g):
         if g[1]==1:
@@ -199,13 +213,13 @@ def Enc_tgt(pk,M):
     H1 = pk['H1']
     Gt = pk['Gt']
     
-    e = pk['e']
+    gt = pk['e']
     
     g1 = (G1[0]*a,G1[1]*a)
     h1 = (H1[0]*b,H1[1]*b)
     
     
-    C0 = (e**M)*e_hat(G1[1],h1[0],Pair)*e_hat(g1[0],H1[1],Pair) 
+    C0 = (gt**M)*e_hat(G1[1],h1[0],Pair)*e_hat(g1[0],H1[1],Pair)
     C1 = e_hat(G1[1],h1[1],Pair)*e_hat(g1[1],H1[1],Pair)
     C2 = Gt.one()    
         
@@ -225,7 +239,8 @@ def Multiply_src(pk,C0,C1):
     b = randint(1,int(p))
     
     #e(C0,C1):
-    eC = (e_hat(C0[0],C1[0],Pair),e_hat(C0[0],C1[1],Pair)*e_hat(C0[1],C1[0],Pair),e_hat(C0[1],C1[1],Pair)) 
+    #eC = (e_hat(C0[0],C1[0],Pair),e_hat(C0[0],C1[1],Pair)*e_hat(C0[1],C1[0],Pair),e_hat(C0[1],C1[1],Pair))
+    eC = e(C0, C1)
     #e(g,h1):
     g1 = (e_hat(g,H1[0]*a,Pair),e_hat(g,H1[1]*a,Pair),Gt.one())
     #e(g1,h):
@@ -358,11 +373,11 @@ def make_Ftable(Field,elt):
     #same public/private key
         
     baby_steps = {}
-    e = oEC.toTupleFp12(Field.one())
+    gt = oEC.toTupleFp12(Field.one())
 
     for j in xrange(2**16):
-        e = oEC.tmulFp12(Fp12,e,oEC.toTupleFp12(elt),Gamma)
-        baby_steps[e]=j+1
+        gt = oEC.tmulFp12(Fp12,gt,oEC.toTupleFp12(elt),Gamma)
+        baby_steps[gt]=j+1
 
     return baby_steps
 
@@ -393,8 +408,8 @@ print 'KeyGen Complete'
 #M0 = 123
 #M1 = 2**30
 
-M0 = 1
-M1 = 1
+M0 = 5
+M1 = 6
 
 C0_src = Enc_src(pk,M0)
 C1_src = Enc_src(pk,M1)
@@ -408,7 +423,7 @@ ECtable = make_ECtable(EFp,pk['g'])
 Ftable = make_Ftable(Fp12,pk['e'])
 print 'Multiplication Tables Created'
 
-CM = Multiply_src(pk,C0_src['C0'],C0_src['C1'])
+CM = Multiply_src(pk,C0_src['C0'],C1_src['C1'])
 print 'Multiply_src Complete'
 
 C_doubleprime_src = Add_src(pk,C0_src,C1_src)
