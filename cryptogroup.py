@@ -32,6 +32,9 @@ class CryptoGroup:
     MAX_BITS = 100
 
     def __init__(self):
+        
+        self.ECtable = {};
+        self.Ftable = {};
         # c = gmpy.mpz(2) # p is 160-bit long
         c = gmpy.mpz(1)  # p is 256-bit long
         d = gmpy.mpz(1)
@@ -137,10 +140,10 @@ class CryptoGroup:
             h, a pair of elements of H
         Returns a triple of elements of Gt
         """
+        
         r0 = e_hat(g[0], h[0], self.Pair)
         r2 = e_hat(g[1], h[1], self.Pair)
-        r1 = e_hat(g[0] + g[1], h[0] + h[1], self.Pair) * \
-            self.Gt.invert(r0 * r2)
+        r1 = e_hat(g[0] + g[1], h[0] + h[1], self.Pair) * self.Gt.invert(r0 * r2)
         return (r0, r1, r2)
 
     def KeyGen(self):
@@ -269,6 +272,15 @@ class CryptoGroup:
         return C  # C = e(C0,C1) * e(g,h1) * e(g1,h)
 
 
+    def sim_switch(self, sk, pk, cipher):
+        blinding_factors = []
+        for bfcount in range(0, 3):
+            blinding_factors.append(self.generate_blinding_factor(pk))
+
+        blinded_cipher = self.blind_pair_cipher(pk, cipher, blinding_factors)
+        switched_cipher = self.switch(sk, pk, blinded_cipher['C'], blinded_cipher['bfEC'], self.Ftable)
+        return switched_cipher
+
     def switch(self, sk, pk, blinded_cipher, blinding_factor_ec, table):
         # simulates encryption switching - needs review
 
@@ -298,7 +310,7 @@ class CryptoGroup:
         return {'C':self.Add_tgt(pk, C, bf_in_pair), 'bfEC':bf_in_ec}
 
     def generate_blinding_factor(self, pk):
-        MAX_BLINDING_FACTOR = 2**14
+        MAX_BLINDING_FACTOR = 2**10
         
         # create a blinding factor
         blinding_factor = randint(1, MAX_BLINDING_FACTOR)
@@ -359,7 +371,7 @@ class CryptoGroup:
 
     # Computes x such that a^x = b over a group of order p using baby step-giant step
     def log_group(self, a, b, Group, table={}):
-
+        table = self.ECtable
         #baby_steps = {}
 
         x = Group.neg(a) * (2**16)
@@ -379,7 +391,7 @@ class CryptoGroup:
 
     # Computes x such that a^x = b over a field of order p using baby step-giant step
     def log_field(self, a, b, Field, table={}):
-
+        table = self.Ftable
         #baby_steps = {}
 
         x = oEC.toTupleFp12(a.invert()**(2**16))
@@ -434,7 +446,8 @@ class CryptoGroup:
             baby_steps[pt] = j + 1
             pt = pt + point
 
-        return baby_steps
+        self.ECtable= baby_steps
+        return self.ECtable
 
     def make_Ftable(self, field, elt):
         # This function makes a multiplication table to aid in computing discrete
@@ -448,4 +461,5 @@ class CryptoGroup:
             gt = oEC.tmulFp12(self.Gt, gt, oEC.toTupleFp12(elt), self.Gamma)
             baby_steps[gt] = j + 1
 
-        return baby_steps
+        self.Ftable =baby_steps
+        return self.Ftable;
