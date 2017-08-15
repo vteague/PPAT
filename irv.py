@@ -1,16 +1,22 @@
 import sys
 class IRV:
+    """ IRV Counter
+    for use with encryption switching """
+
     def __init__(self, group, pubkey, secretkey):
         self.group = group
         self.pubkey = pubkey
         self.secretkey = secretkey
+
     def perform_count(self, ballots):
-        for round_count in range(0,ballots.candcount-1):
+        """start an IRV count on the specified ballots"""
+        for round_count in range(0, ballots.candcount-1):
+            print "Starting tally round", round_count
             round_result = self.perform_round(ballots)
             ballots.eliminate(round_result['removeidx'])
 
     def perform_round(self, ballots):
-        print "Starting tally round"
+        """Perform a single round of IRV counting"""
         tallies = ballots.run_count(self.group, self.pubkey, self.secretkey)
         dec_tally = []
         min_indexes = []

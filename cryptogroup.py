@@ -273,6 +273,9 @@ class CryptoGroup:
 
 
     def sim_switch(self, sk, pk, cipher):
+        """
+        Simulates performing a switch with 3 blinding factors representing 3 parties
+        """
         blinding_factors = []
         for bfcount in range(0, 3):
             blinding_factors.append(self.generate_blinding_factor(pk))
@@ -282,7 +285,9 @@ class CryptoGroup:
         return switched_cipher
 
     def switch(self, sk, pk, blinded_cipher, blinding_factor_ec, table):
-        # simulates encryption switching - needs review
+        """
+            simulates encryption switching - needs review
+        """
 
         # Perform a decryption in the Pairing group to recover an integer (blindingfactor + m)
         blinded_plaintext = self.Dec_tgt(sk, pk, blinded_cipher, table)
@@ -299,6 +304,16 @@ class CryptoGroup:
         return switched_cipher
 
     def blind_pair_cipher(self, pk, C, blinding_factors):
+        """
+        Blind a cipher in the target (Pairing based) group. This is just a matter
+        of summing the encrypted blinding factors in both the EC and Pairing based groups
+        then adding the pairing based sum to the cipher. 
+
+        Returns:
+            Dictionary containing:
+                C: Blinded Cipher (Pairing group)
+                bfEC: Cipher of sum of encrypted blinding factors (EC Group)
+        """
         # accumulate blinding factors
         bf_in_ec = blinding_factors[0]['bfEC']
         bf_in_pair = blinding_factors[0]['bfPair']
@@ -310,6 +325,13 @@ class CryptoGroup:
         return {'C':self.Add_tgt(pk, C, bf_in_pair), 'bfEC':bf_in_ec}
 
     def generate_blinding_factor(self, pk):
+        """
+        Generates a blinding factor within the fixed range
+
+        TODO:
+            Decide MAX_BLINDING_FACTOR range
+            Provide proof of equality
+        """
         MAX_BLINDING_FACTOR = 2**10
         
         # create a blinding factor
@@ -323,6 +345,11 @@ class CryptoGroup:
         return {'bfEC':bf_in_ec, 'bfPair':bf_in_pair}
 
     def negate_src(self, C):
+        """
+        Negates the specified EC point in the src group. Use for subtraction
+        Args:
+            C (ECPoint): to negate
+        """
         # straightforward EC negation
         return {'C0': (C['C0'][0].__neg__(),C['C0'][1].__neg__()), 'C1': (C['C1'][0].__neg__(),C['C1'][1].__neg__())}
 
