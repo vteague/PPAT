@@ -14,6 +14,7 @@
 # limitations under the License.
 """
 from __future__ import print_function
+import time
 class Ballot:
     """
     Ballot Class that contains the preferences for a single ballot.
@@ -66,7 +67,7 @@ class Ballot:
                     else:
                         row_sum = group.Add_src(pubkey, row_sum, encprefrow[pref_counter])
             row_sums.append(row_sum)
-
+        
         # encryption of one and running total set to 0
         enc_one = group.Enc_src(pubkey, 1)
         running_total = group.Enc_src(pubkey, 0)
@@ -78,8 +79,8 @@ class Ballot:
             row_sums[row_counter] = group.sim_switch(secretkey, pubkey, row_adjust)
             running_total = group.Add_src(pubkey, running_total, row_sums[row_counter])
             enc_previous_row = group.Add_src(pubkey, enc_one, group.negate_src(running_total))
-
-        # sum the columns apply row multiplier (1 or 0) to select only current preference
+        
+        # apply row multiplier (1 or 0) to select only current preference
         firstrow = self.encprefs[0]
         column_tallies = []
         for pref_counter in range(0, len(firstrow)):
@@ -108,3 +109,4 @@ class Ballot:
                 # skip column if eliminated
                 if col_counter not in eliminated:
                     tallies[col_counter] = group.Add_tgt(pubkey, tallies[col_counter], column_tallies[col_counter])
+

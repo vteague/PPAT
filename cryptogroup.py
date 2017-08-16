@@ -277,11 +277,13 @@ class CryptoGroup:
         """
         Simulates performing a switch with 3 blinding factors representing 3 parties
         """
+
         blinding_factors = []
         for bfcount in range(0, 3):
             blinding_factors.append(self.generate_blinding_factor(pk))
 
         blinded_cipher = self.blind_pair_cipher(pk, cipher, blinding_factors)
+
         switched_cipher = self.switch(sk, pk, blinded_cipher['C'], blinded_cipher['bfEC'], self.Ftable)
         return switched_cipher
 
@@ -292,7 +294,7 @@ class CryptoGroup:
 
         # Perform a decryption in the Pairing group to recover an integer (blindingfactor + m)
         blinded_plaintext = self.Dec_tgt(sk, pk, blinded_cipher, table)
-        
+
         # Encrypt blinded integer in EC group
         blinded_cipher_in_ec = self.Enc_src(pk, blinded_plaintext)
 
@@ -308,7 +310,7 @@ class CryptoGroup:
         """
         Blind a cipher in the target (Pairing based) group. This is just a matter
         of summing the encrypted blinding factors in both the EC and Pairing based groups
-        then adding the pairing based sum to the cipher. 
+        then adding the pairing based sum to the cipher.
 
         Returns:
             Dictionary containing:
@@ -334,7 +336,7 @@ class CryptoGroup:
             Provide proof of equality
         """
         MAX_BLINDING_FACTOR = 2**10
-        
+
         # create a blinding factor
         blinding_factor = randint(1, MAX_BLINDING_FACTOR)
 

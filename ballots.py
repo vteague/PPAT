@@ -74,7 +74,7 @@ class Ballots:
                 row_added = True
         if row_added:
             self.ballots.append(currentballot)
-        print(len(self.ballots), ' ballots added with ', self.candcount, ' candidates.')
+        print(len(self.ballots), 'ballots added with', self.candcount, 'candidates.')
 
     def encrypt_prefs(self, group, pubkey):
         """Encrypt the preferences in all the ballots
@@ -98,9 +98,9 @@ class Ballots:
         tallies = []
         counter = 1
         for ballot in self.ballots:
-            print("Adding ballot: ", counter)
+            print("Adding ballot:", counter)
             ballot.add_to_tally(group, pubkey, secretkey, tallies, self.eliminated)
-            print("Finished adding ballot: ", counter)
+            print("Finished adding ballot:", counter)
             counter = counter + 1
         return tallies
        
