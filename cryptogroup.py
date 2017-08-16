@@ -13,6 +13,7 @@
 # limitations under the License.
 
 # -*- coding: utf-8 -*-
+from __future__ import print_function
 import time
 import numpy as np
 import itertools
@@ -33,8 +34,8 @@ class CryptoGroup:
 
     def __init__(self):
         
-        self.ECtable = {};
-        self.Ftable = {};
+        self.ECtable = {}
+        self.Ftable = {}
         # c = gmpy.mpz(2) # p is 160-bit long
         c = gmpy.mpz(1)  # p is 256-bit long
         d = gmpy.mpz(1)
@@ -291,7 +292,7 @@ class CryptoGroup:
 
         # Perform a decryption in the Pairing group to recover an integer (blindingfactor + m)
         blinded_plaintext = self.Dec_tgt(sk, pk, blinded_cipher, table)
-
+        
         # Encrypt blinded integer in EC group
         blinded_cipher_in_ec = self.Enc_src(pk, blinded_plaintext)
 
@@ -489,4 +490,4 @@ class CryptoGroup:
             baby_steps[gt] = j + 1
 
         self.Ftable =baby_steps
-        return self.Ftable;
+        return self.Ftable

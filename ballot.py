@@ -1,3 +1,19 @@
+"""
+# Copyright 2017 Chris Culnane
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""
+from __future__ import print_function
 class Ballot:
     """
     Ballot Class that contains the preferences for a single ballot.
@@ -12,7 +28,7 @@ class Ballot:
         """
         Adds a string from the vote file of the form 0 1 0 to this ballot. Converts the
         string into a list of integer preferences
-        
+
         Args:
             row (string): string contain preference
         """
@@ -32,11 +48,11 @@ class Ballot:
                 encprefrow.append(group.Enc_src(pubkey, pref))
             self.encprefs.append(encprefrow)
 
-    def add_to_tally(self, group, pubkey, sk, tallies, eliminated):
+    def add_to_tally(self, group, pubkey, secretkey, tallies, eliminated):
         """
         Adds the prefernecs into the irv tally. This is where the heart of the
         irv count is performed. Sums each row homomorphically, calculates row
-        multiplier (0 or 1) to determine current preference, multiplies each 
+        multiplier (0 or 1) to determine current preference, multiplies each
         possible preference value in each column with the respective multiplier,
         before finally summing the columns"""
         row_sums = []
@@ -59,10 +75,10 @@ class Ballot:
         #for each row calculate the multiplier by multipling it by 1-sum(previous multipliers)
         for row_counter in range(0, len(row_sums)):
             row_adjust = group.Multiply_src(pubkey, enc_previous_row['C0'], row_sums[row_counter]['C1'])
-            row_sums[row_counter] = group.sim_switch(sk, pubkey, row_adjust)
+            row_sums[row_counter] = group.sim_switch(secretkey, pubkey, row_adjust)
             running_total = group.Add_src(pubkey, running_total, row_sums[row_counter])
             enc_previous_row = group.Add_src(pubkey, enc_one, group.negate_src(running_total))
-            
+
         # sum the columns apply row multiplier (1 or 0) to select only current preference
         firstrow = self.encprefs[0]
         column_tallies = []
@@ -72,7 +88,7 @@ class Ballot:
                 column_tallies.append(group.Multiply_src(pubkey, firstrow[pref_counter]['C0'], row_sums[0]['C1']))
             else:
                 column_tallies.append(None)
-        
+
         # sum the tallies in each column (should be a list with a 1 in the column of current pref)
         for row_counter in range(1, len(row_sums)):
             for pref_counter in range(0, len(firstrow)):

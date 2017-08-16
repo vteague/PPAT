@@ -1,4 +1,3 @@
-import sys
 from ballots import Ballots
 from cryptogroup import CryptoGroup
 

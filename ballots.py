@@ -1,3 +1,19 @@
+"""
+# Copyright 2017 Chris Culnane
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""
+from __future__ import print_function
 from ballot import Ballot
 
 class Ballots:
@@ -12,6 +28,13 @@ class Ballots:
         self.ballots = []
         self.candcount = 0
         self.eliminated = []
+
+    @property
+    def ballotcount(self):
+        """
+        Gets the number of ballots
+        """
+        return len(self.ballots)
 
     def eliminate(self, cand_idx):
         """Eliminate a candidate from the count. This does not

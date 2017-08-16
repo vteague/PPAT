@@ -1,4 +1,20 @@
-import sys
+"""
+# Copyright 2017 Chris Culnane
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""
+from __future__ import print_function
+
 class IRV:
     """ IRV Counter
     for use with encryption switching """
@@ -11,7 +27,7 @@ class IRV:
     def perform_count(self, ballots):
         """start an IRV count on the specified ballots"""
         for round_count in range(0, ballots.candcount-1):
-            print "Starting tally round", round_count
+            print("Starting tally round", round_count)
             round_result = self.perform_round(ballots)
             ballots.eliminate(round_result['removeidx'])
 
@@ -20,7 +36,7 @@ class IRV:
         tallies = ballots.run_count(self.group, self.pubkey, self.secretkey)
         dec_tally = []
         min_indexes = []
-        min_idx = sys.maxint
+        min_idx = ballots.ballotcount
         candidateindex = 0
         for tally in tallies:
             if tally is not None:
@@ -33,12 +49,12 @@ class IRV:
             else:
                 dec_tally.append(None)
             candidateindex = candidateindex + 1
-        print "Finished tally round"
-        print "Tally:", dec_tally.__str__()
-        print "Candidates with mins:", min_indexes.__str__()
+        print("Finished tally round")
+        print("Tally:", dec_tally.__str__())
+        print("Candidates with mins:", min_indexes.__str__())
         remove_cand_idx = -1
         if len(min_indexes) > 1:
-            print "Selecting candidate to remove at random"
+            print("Selecting candidate to remove at random")
             # TODO make this random
             remove_cand_idx = min_indexes[0]
         else:
