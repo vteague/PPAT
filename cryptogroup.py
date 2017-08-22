@@ -277,33 +277,49 @@ class CryptoGroup:
         """
         Simulates performing a switch with 3 blinding factors representing 3 parties
         """
-
+        start=time.time()
         blinding_factors = []
-        for bfcount in range(0, 3):
-            blinding_factors.append(self.generate_blinding_factor(pk))
-
+        #for bfcount in range(0, 3):
+        startone=time.time()
+        blinding_factors.append(self.generate_blinding_factor(pk))
+        endone=time.time()
+        print("genblind:",endone-startone);
+        
+        startone=time.time()
         blinded_cipher = self.blind_pair_cipher(pk, cipher, blinding_factors)
-
+        endone=time.time()
+        print("blind:",endone-startone);
+        
         switched_cipher = self.switch(sk, pk, blinded_cipher['C'], blinded_cipher['bfEC'], self.Ftable)
+        end=time.time()
+        print("switch_total:",end-start)
         return switched_cipher
 
     def switch(self, sk, pk, blinded_cipher, blinding_factor_ec, table):
         """
             simulates encryption switching - needs review
         """
-
+        start=time.time()
         # Perform a decryption in the Pairing group to recover an integer (blindingfactor + m)
         blinded_plaintext = self.Dec_tgt(sk, pk, blinded_cipher, table)
-
+        end=time.time()
+        print("Dec:", end-start)
+        
         # Encrypt blinded integer in EC group
+        start=time.time()
         blinded_cipher_in_ec = self.Enc_src(pk, blinded_plaintext)
-
+        end=time.time()
+        print("Enc:", end-start)
+        
+        start=time.time()
         # Negate the blindingfactor in EC
         negated_bf = self.negate_src(blinding_factor_ec)
         #  and add to the newly encrypted value in the EC group
         # thus removing the blinding factor
         switched_cipher = self.Add_src(pk, blinded_cipher_in_ec, negated_bf)
-
+        end=time.time()
+        print("Neg:", end-start)
+        
         return switched_cipher
 
     def blind_pair_cipher(self, pk, C, blinding_factors):
