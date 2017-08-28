@@ -9,6 +9,8 @@ pk,sk = group.KeyGen()
 
 group.make_ECtable(group.G,pk['g'])
 group.make_Ftable(group.Gt,pk['e'])
+Ftable = group.make_full_Ftable(group.Gt,pk['e'])
+
 print('Multiplication Tables Created')
 
 M0 = 1
