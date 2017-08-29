@@ -121,6 +121,7 @@ class CryptoGroup:
         self.G = EFp
         self.p = p
         self.Gamma = oEC.prec_gamma(Fp12, u, c, d)
+        self.EFP2 = EFp2
     def pr(self, u):
         return 36 * u**4 + 36 * u**3 + 24 * u**2 + 6 * u + 1
 
@@ -142,10 +143,10 @@ class CryptoGroup:
             h, a pair of elements of H
         Returns a triple of elements of Gt
         """
-        
-        r0 = e_hat(g[0], h[0], self.Pair)
-        r2 = e_hat(g[1], h[1], self.Pair)
-        r1 = e_hat(g[0] + g[1], h[0] + h[1], self.Pair) * self.Gt.invert(r0 * r2)
+        r0 = e_hat(oEC.toEFp(self.EFP, g[0]), oEC.toEFp2(self.EFP2, h[0]), self.Pair)
+        r2 = e_hat(oEC.toEFp(self.EFP, g[1]), oEC.toEFp2(self.EFP2, h[1]), self.Pair)
+        r1 = e_hat(oEC.toEFp(self.EFP, oEC.addEFp(self.EFP, g[0], g[1])), oEC.toEFp2(self.EFP2, oEC.addEFp2(self.EFP, h[0], h[1])), self.Pair) * self.Gt.invert(r0 * r2)
+        #r1 = e_hat(g[0] + g[1], h[0] + h[1], self.Pair) * self.Gt.invert(r0 * r2)
         return (r0, r1, r2)
 
     def KeyGen(self):
@@ -154,7 +155,7 @@ class CryptoGroup:
 
         P1 = self.P * randint(0, int(self.n))
         G1 = (self.G.neg(P1) * s, P1)  # Description of G1 - (g^{-s},g)
-
+        
         Q1 = self.Q * randint(0, int(self.n))
         H1 = (self.H.neg(Q1) * s, Q1)  # Description of H1 - (h^{-s},h)
 
@@ -164,13 +165,26 @@ class CryptoGroup:
         h = Q1
 
         self.gt = e_hat(g, h, self.Pair)
-        self.G1Pair = (e_hat( G1[0], h,self.Pair), e_hat(G1[1],h, self.Pair), self.Gt.one())
+        self.G1Pair = (e_hat(G1[0], h, self.Pair), e_hat(G1[1], h, self.Pair), self.Gt.one())
         self.H1Pair = (e_hat(g, H1[0], self.Pair), e_hat(g, H1[1], self.Pair), self.Gt.one())
+
+
+        G1_0_elem = oEC.toTupleEFp(self.EFP.elem(G1[0].x,G1[0].y))
+        G1_1_elem = oEC.toTupleEFp(self.EFP.elem(G1[1].x,G1[1].y))
+        #print("h1",H1[0])
+        #self.H1_0_elem = oEC.toTupleEFp(H1[0].x,H1[0].y)
+        #self.H1_1_elem = oEC.toTupleEFp(H1[1].x,H1[1].y)
+        #H1Elem = (oEC.psi(self.FP12, H1[0]), oEC.psi(self.FP12, H1[1]))
+        H1Elem = (oEC.toTupleEFp2(H1[0]), oEC.toTupleEFp2(H1[1]))
         
-        self.G1xH1_0 = oEC.tmulFp12(self.Gt, oEC.toTupleFp12(self.G1Pair[0]),oEC.toTupleFp12(self.H1Pair[0]), self.Gamma)
-        self.G1xH1_1 = oEC.tmulFp12(self.Gt, oEC.toTupleFp12(self.G1Pair[1]),oEC.toTupleFp12(self.H1Pair[1]), self.Gamma)
+        gElem = oEC.toTupleEFp(self.EFP.elem(g.x,g.y))
+        hElem = oEC.toTupleEFp2(h)
+        #H1Elem = (oEC.toTupleEFp(self.FP2.elem(H1[0])),oEC.toTupleEFp(self.FP2.elem(H1[1])))
+
+        self.G1xH1_0 = oEC.tmulFp12(self.Gt, oEC.toTupleFp12(self.G1Pair[0]), oEC.toTupleFp12(self.H1Pair[0]), self.Gamma)
+        self.G1xH1_1 = oEC.tmulFp12(self.Gt, oEC.toTupleFp12(self.G1Pair[1]), oEC.toTupleFp12(self.H1Pair[1]), self.Gamma)
         pk = {'G': self.G, 'G1': G1, 'H': self.H, 'H1': H1,
-              'Gt': self.Gt, 'g': g, 'h': h, 'e': self.gt}
+              'Gt': self.Gt, 'g': g, 'h': h, 'e': self.gt, 'GElem':(G1_0_elem, G1_1_elem),'H1Elem':H1Elem, 'gelem':gElem, 'helem':hElem}
 
         def pi_1(g):
             if g[1] == 1:
@@ -198,17 +212,30 @@ class CryptoGroup:
         return pk, sk
 
     def Enc_src(self, pk, M):
-
         a = randint(1, int(self.p))
         b = randint(1, int(self.p))
 
-        G1 = pk['G1']
-        H1 = pk['H1']
-        
-        g1 = (G1[0] * a, G1[1] * a)
-        h1 = (H1[0] * b, H1[1] * b)
-        C_0 = (pk['g'] * M + g1[0], g1[1])  # C_0 = (g^M * g^{-as}, g^a)
-        C_1 = (pk['h'] * M + h1[0], h1[1])  # C_1 = (h^M * h^{-bs}, h^b)
+        GElem = pk['GElem']
+        H1Elem = pk['H1Elem']
+
+        #H1 = pk['H1']
+
+        #G1 = pk['G1']
+        #H1 = pk['H1']
+
+        #self.EFP.mul(self.G1_0_elem,a)
+        #self.EFP.mul(self.G1_1_elem,a)
+
+        g1 = (oEC.mulECP(self.EFP, GElem[0], a), oEC.mulECP(self.EFP, GElem[1], a))
+        h1 = (oEC.mulECP(self.EFP2, H1Elem[0], b, True), oEC.mulECP(self.EFP2, H1Elem[1], b, True))
+
+        #g1 = (G1[0] * a, G1[1] * a)
+        #h1 = (H1[0] * b, H1[1] * b)
+
+        C_0 = (oEC.addEFp(self.EFP, oEC.mulECP(self.EFP, pk['gelem'], M), g1[0]), g1[1])
+        C_1 = (oEC.addEFp2(self.EFP2, oEC.mulECP(self.EFP2, pk['helem'], M, True), h1[0]), h1[1])
+        #C_0 = (pk['g'] * M + g1[0], g1[1])  # C_0 = (g^M * g^{-as}, g^a)
+        #C_1 = (pk['h'] * M + h1[0], h1[1])  # C_1 = (h^M * h^{-bs}, h^b)
 
         C = {'C0': C_0, 'C1': C_1}
         return C
@@ -219,9 +246,12 @@ class CryptoGroup:
 
         G1 = pk['G1']
         H1 = pk['H1']
-        
-        g1 = (G1[0] * a, G1[1] * a)
-        h1 = (H1[0] * b, H1[1] * b)
+
+        g1 = (oEC.mulECP(self.EFP, G1[0], a), oEC.mulECP(self.EFP, G1[1], a))
+        h1 = (oEC.mulECP(self.EFP, H1[0], b), oEC.mulECP(self.EFP, H1[1], b))
+
+        #g1 = (G1[0] * a, G1[1] * a)
+        #h1 = (H1[0] * b, H1[1] * b)
 
         C_0 = ((pk['g'] * M + g1[0]).__neg__(), g1[1].__neg__())  # C_0 = (g^M * g^{-as}, g^a)
         C_1 = ((pk['h'] * M + h1[0]).__neg__(), h1[1].__neg__())  # C_1 = (h^M * h^{-bs}, h^b)
@@ -240,8 +270,22 @@ class CryptoGroup:
 
         gt = pk['e']
         
-        g1 = (G1[0] * a, G1[1] * a)
-        h1 = (H1[0] * b, H1[1] * b)
+        #g1 = (G1[0] * a, G1[1] * a)
+        #h1 = (H1[0] * b, H1[1] * b)
+
+        G1Elem = pk['GElem']
+        H1Elem = pk['H1Elem']
+
+        #H1 = pk['H1']
+
+        #G1 = pk['G1']
+        #H1 = pk['H1']
+
+        #self.EFP.mul(self.G1_0_elem,a)
+        #self.EFP.mul(self.G1_1_elem,a)
+
+        g1 = (oEC.mulECP(self.EFP, G1Elem[0], a), oEC.mulECP(self.EFP, G1Elem[1], a))
+        h1 = (oEC.mulECP(self.EFP2, H1Elem[0], b, True), oEC.mulECP(self.EFP2, H1Elem[1], b, True))
 
         gt_oec=oEC.toTupleFp12(gt)
         gt_m = oEC.squareAndMultiplyFp12(self.Gt,gt_oec,M,oEC.tmulFp12,oEC.tsqrtFp12,self.Gamma)
@@ -254,11 +298,11 @@ class CryptoGroup:
         #pair_one=oEC.toTupleFp12(e_hat(G1[1],h1[0],self.Pair))
         #print("ehat",pair_one)
         #C0 = (gt**M)*e_hat(G1[1],h1[0],self.Pair)*e_hat(g1[0],H1[1],self.Pair)
-        innerOne = oEC.tmulFp12(self.Gt, gt_m, oEC.toTupleFp12(e_hat(G1[1],h1[0],self.Pair)), self.Gamma)
-        C0 = oEC.tmulFp12(self.Gt, innerOne, oEC.toTupleFp12(e_hat(g1[0],H1[1],self.Pair)), self.Gamma)
+        innerOne = oEC.tmulFp12(self.Gt, gt_m, oEC.toTupleFp12(e_hat(oEC.toEFp(self.EFP,G1Elem[1]),oEC.toEFp2(self.EFP2,h1[0]),self.Pair)), self.Gamma)
+        C0 = oEC.tmulFp12(self.Gt, innerOne, oEC.toTupleFp12(e_hat(oEC.toEFp(self.EFP,g1[0]),oEC.toEFp2(self.EFP2,H1Elem[1]),self.Pair)), self.Gamma)
         #C0 = gt_m*e_hat(G1[1],h1[0],self.Pair)*e_hat(g1[0],H1[1],self.Pair)
         
-        C1 = oEC.tmulFp12(self.Gt, oEC.toTupleFp12(e_hat(G1[1],h1[1],self.Pair)), oEC.toTupleFp12(e_hat(g1[1],H1[1],self.Pair)), self.Gamma)
+        C1 = oEC.tmulFp12(self.Gt, oEC.toTupleFp12(e_hat(oEC.toEFp(self.EFP,G1Elem[1]),oEC.toEFp2(self.EFP2,h1[1]),self.Pair)), oEC.toTupleFp12(e_hat(oEC.toEFp(self.EFP,g1[1]),oEC.toEFp2(self.EFP2,H1Elem[1]),self.Pair)), self.Gamma)
         #C1 = e_hat(G1[1],h1[1],self.Pair)*e_hat(g1[1],H1[1],self.Pair)
         C2 = oEC.toTupleFp12(Gt.one())
         C = {'C0': C0, 'C1': C1, 'C2': C2}
@@ -278,7 +322,9 @@ class CryptoGroup:
 
         # e(C0,C1):
         #eC = (e_hat(C0[0],C1[0],Pair),e_hat(C0[0],C1[1],Pair)*e_hat(C0[1],C1[0],Pair),e_hat(C0[1],C1[1],Pair))
+
         eC = self.e(C0, C1)
+        
         # e(g,h1):
         
         #g1 = (e_hat(g, H1[0] * a, self.Pair),
@@ -396,20 +442,34 @@ class CryptoGroup:
             C (ECPoint): to negate
         """
         # straightforward EC negation
-        return {'C0': (C['C0'][0].__neg__(),C['C0'][1].__neg__()), 'C1': (C['C1'][0].__neg__(),C['C1'][1].__neg__())}
+        C0_0=oEC.toTupleEFp(oEC.toEFp(self.EFP, C['C0'][0]).__neg__())
+        C0_1=oEC.toTupleEFp(oEC.toEFp(self.EFP, C['C0'][1]).__neg__())
+        C1_0=oEC.toTupleEFp2(oEC.toEFp2(self.EFP2, C['C1'][0]).__neg__())
+        C1_1=oEC.toTupleEFp2(oEC.toEFp2(self.EFP2, C['C1'][1]).__neg__())
+        
+        return {'C0': (C0_0,C0_1), 'C1': (C1_0,C1_1)}
+        #return {'C0': (C['C0'][0].__neg__(),C['C0'][1].__neg__()), 'C1': (C['C1'][0].__neg__(),C['C1'][1].__neg__())}
 
     def Add_src(self, pk, C, C_prime):
 
-        G1 = pk['G1']
-        H1 = pk['H1']
+
+        GElem = pk['GElem']
+        H1Elem = pk['H1Elem']
+
+        #G1 = pk['G1']
+        #H1 = pk['H1']
 
         #a = randint(1, int(self.n))
         #b = randint(1, int(self.n))
         #g1 = (G1[0]*a, G1[1]*a)
         #h1 = (H1[0]*b, H1[1]*b)
-
-        C_0 = ((C_prime['C0'][0]+G1[0])+C['C0'][0],(C_prime['C0'][1]+G1[1])+C['C0'][1])
-        C_1 = ((C_prime['C1'][0]+H1[0])+C['C1'][0],(C_prime['C1'][1]+H1[1])+C['C1'][1])
+        C_0 = (oEC.addEFp(self.EFP,oEC.addEFp(self.EFP, C_prime['C0'][0], GElem[0]),C['C0'][0]),oEC.addEFp(self.EFP,oEC.addEFp(self.EFP, C_prime['C0'][1], GElem[1]),C['C0'][1]))
+        #print("CPrime",C_prime['C1'][0])
+        #print("HELEM",H1Elem[0])
+        #oEC.addEFp2(self.EFP, C_prime['C1'][0], H1Elem[0])
+        C_1 = (oEC.addEFp2(self.EFP,oEC.addEFp2(self.EFP, C_prime['C1'][0], H1Elem[0]),C['C1'][0]),oEC.addEFp2(self.EFP,oEC.addEFp2(self.EFP, C_prime['C1'][1], H1Elem[1]),C['C1'][1]))
+        #C_0 = ((C_prime['C0'][0]+G1[0])+C['C0'][0],(C_prime['C0'][1]+G1[1])+C['C0'][1])
+        #C_1 = ((C_prime['C1'][0]+H1[0])+C['C1'][0],(C_prime['C1'][1]+H1[1])+C['C1'][1])
         
         C_doubleprime = {'C0':C_0,'C1':C_1} # C'' = ( C0*C'0*g1 , C1*C'1*h1 )
         return C_doubleprime
