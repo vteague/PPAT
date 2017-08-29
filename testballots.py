@@ -8,7 +8,7 @@ ballots.load()
 group = CryptoGroup()
 pk,sk = group.KeyGen()
 
-ECtable = group.make_ECtable(group.G, pk['g'])
+#ECtable = group.make_ECtable(group.G, pk['g'])
 Ftable = group.make_full_Ftable(group.Gt, pk['e'])
 
 ballots.encrypt_prefs(group,pk)
