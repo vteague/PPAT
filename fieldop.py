@@ -5,6 +5,7 @@ from mathTools.otosEC import OptimAtePairing as e_hat
 import mathTools.otosEC as oEC
 import gmpy2 as gmpy
 from Crypto.Random.random import randint
+from cryptogroup import CryptoGroup
 
 import unittest
 import time
@@ -186,6 +187,24 @@ class TestFieldOp(unittest.TestCase):
         t = time.time() - t1
         print "%s: %.4f" % ("pairing on pairs -- Karatsuba", t)
         self.assertEqual(gt1, gt2, 'pairing on pairs seems inconsistent')
+
+    def test_EFp_DLog(self):
+        group = CryptoGroup()
+        pk, sk = group.KeyGen()
+        t = time.time() - self.startTime
+        print "%s: %.4f" % ("Key generation", t)
+        t1 = time.time()
+        group.make_ECtable(group.G, pk['g'], max_dl=2**32, max_search=2**10)
+        t = time.time() - t1
+        print "%s: %.4f" % ("ECTable computation", t)
+        x = 9
+        y = oEC.mulECP(group.G, pk['g'], x, sq=False)
+        #print y
+        t2 = time.time()
+        xc = group.log_group(pk['g'], y, group.G)
+        t = time.time() - t2
+        print "%s: %.4f" % ("DL Extraction", t)
+        self.assertEqual(x, xc, 'DL extraction fails')
 
 
 if __name__ == '__main__':

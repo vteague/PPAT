@@ -292,7 +292,7 @@ def addEFp(ECG,P1,P2,Jcoord=False):
         elif P2inf :
             return Xp1,Yp1,P1inf
         elif P1==P2:
-            return doubleEFp(ECG,P1,Jcoord=True)
+            return doubleEFp(ECG,P1,Jcoord=False)
         else:
             # P1!=P2
             if Xp1 == Xp2 :

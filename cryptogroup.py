@@ -26,7 +26,7 @@ import gmpy2 as gmpy
 from Crypto.Random.random import randint
 from Crypto.Random.random import getrandbits
 from mathTools.otosEC import OptimAtePairing as e_hat
-
+from math import sqrt
 
 class CryptoGroup:
     # maximum size in bits of secret
@@ -477,25 +477,25 @@ class CryptoGroup:
                 #gamma = gamma + x
 
         return "No Match"
-    def log_group(self, a, b, Group, table={}):
+
+    def log_group(self, a, b, Group):
+        """Extracts the discrete log of b in base a in Group.
+        Assumes that self.ECtable contains precomputed values for base a
+
+        :param a: base element as a tuple
+        :param b: element from which DL must be extracted as a tuple
+        :param Group: Group in which a and b lie
+        :param table: precomputed table for a
+        :return: x: b == a**x
+        """
         table = self.ECtable
-        #baby_steps = {}
-
-        x = Group.neg(a) * (2**16)
-        gamma = b
-
-        if table == {}:
-            print('No Table Found')
-            table = make_ECtable(Group, a)
-
-        for i in range(2**16):
-            if gamma in table:
-                return i * (2**16) + table[gamma]
-            else:
-                gamma = gamma + x
-                #gamma = gamma + x
-
-        return "No Match"
+        i = 0
+        while not b in table:
+            b = oEC.addEFp(Group, a, b)
+            i += 1
+            if (i % 2**13 == 0):
+                print("i =", i)
+        return table[b] - i
 
     # Computes x such that a^x = b over a field of order p using baby step-giant step
     def log_field(self, a, b, Field, table={}):
@@ -567,24 +567,34 @@ class CryptoGroup:
         M = self.log_full_field(c_oec)
         return M
 
-    def make_ECtable(self, grp, point):
-        # This function makes a multiplication table to aid in computing discrete
-        # logarithims to speed up decryption of multiple messages encrypted with the
-        # same public/private key
+    def make_ECtable(self, grp, point, max_dl=2**32, max_search=2**12):
+        """This function makes a multiplication table to aid in computing discrete
+        logarithms to speed up decryption of multiple messages encrypted with the
+        same public/private key
+        Inputs:
+        - grp is an elliptic curve group on Fp
+        - point is a tuple
+        - max_dl is the highest value that the DL can take
+        """
 
-        # VT: I edited this to make it terminate at exactly the index it previously did.
-        # However, I'd assume that the omission of the j=2**16 + 1 case makes no
-        # difference so we should just let the range terminate at 2**16 as before.
-        # But I'm reluctant to fiddle in case I mess up something important.
+        # Store the giant steps. Keys are points, values are exponents
+        giant_steps = {}
+        table_size = max_dl / max_search + 1
+        # Size of the giant steps (on the curve)
+        giant_step = oEC.mulECP(grp, point, max_search)
+        # Counter of current value of the exponent
+        exponent = max_search
+        # Position of that counter on the curve
+        running_step = giant_step
+        # j performs as many steps as needed.
+        # The '+1' handles the case when max_dl is not a square
+        for j in xrange(table_size):
+            giant_steps[running_step] = exponent
+            running_step = oEC.addEFp(grp, running_step, giant_step)
+            exponent += max_search
+            # print("Giant steps: ", giant_steps)
 
-        baby_steps = {}
-        pt = point
-        for j in xrange(2**16 + 1):
-            baby_steps[pt] = j + 1
-            pt = pt + point
-            #pt = oEC.addEFp(self.G, pt, point)
-
-        self.ECtable = baby_steps
+        self.ECtable = giant_steps
         return self.ECtable
 
     def make_Ftable(self, field, elt):
