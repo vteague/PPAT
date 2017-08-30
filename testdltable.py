@@ -16,10 +16,14 @@ def createval(idx, group, elt):
 
 # Calculate line length based on how big an integer value we wish to store
 linelength = DLTable.calculate_line_length(20)
-
+print("LineLength:", linelength)
 # Create group and keys
 group = CryptoGroup()
-pk,sk = group.KeyGen()
+key = {}
+key['pk']=group.loadPublicKey('pubkey.json')
+key['sk']=group.loadSecretKey('secretkey.json')
+pk,sk = group.KeyGen(key)
+
 print("Created group")
 
 # Create a DLTable with the appropraite line length and file name
@@ -32,7 +36,7 @@ print("Starting to build table")
 # Iterate through values as before
 elt = oEC.toTupleFp12(pk['e'])
 gt = oEC.toTupleFp12(group.Gt.one())
-for j in range((2**10)+1):
+for j in range((2**20)+1):
     gt = oEC.tmulFp12(group.Gt, gt, elt, group.Gamma)
     # add the value to the table
     dltable.add_row(gt, j+1)

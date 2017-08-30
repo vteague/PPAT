@@ -26,6 +26,7 @@ import mathTools.ellipticCurve as ellipticCurve
 import mathTools.pairing as pairing
 import ppat.ppats
 import mathTools.otosEC as oEC
+from dltable import DLTable
 import gmpy2 as gmpy
 from gmpy2 import mpz
 from Crypto.Random.random import randint
@@ -52,7 +53,7 @@ class CryptoGroup:
         self.n = self.nr(u)
         #p = 1300829
         #n = 1299721
-
+        
         #n = 36*u**4 + 36*u**3 + 18*u**2 + 6*u + 1
         # n is 160-bit long with low HW
         t = 6 * u**2 + 1
@@ -156,6 +157,12 @@ class CryptoGroup:
         #r1 = e_hat(g[0] + g[1], h[0] + h[1], self.Pair) * self.Gt.invert(r0 * r2)
         return (r0, r1, r2)
 
+    def load_dltable(self, tablefile, linelength):
+        # Create a new DLTable pointing to the sorted table
+        self.dltable = DLTable(self, tablefile, linelength)
+        # Open the table, by default this is read only
+        self.dltable.open()
+        self.use_dltable = True
     def save_public_key(self, pk, pk_file_path):
         pk_json = {}
         pk_json['g_0'] = pk['g'][0].digits(16)
@@ -655,7 +662,7 @@ class CryptoGroup:
         self.Ftable = baby_steps
         return self.Ftable
 
-    def make_full_Ftable(self, field, elt):
+    def make_full_Ftable(self, field, elt, dltable = None):
         # This function makes a multiplication table to aid in computing discrete
         # logarithims to speed up decryption of multiple messages encrypted with the
         # same public/private key
@@ -665,26 +672,13 @@ class CryptoGroup:
 
         for j in range((2**20)+1):
             gt = oEC.tmulFp12(self.Gt, gt, oEC.toTupleFp12(elt), self.Gamma)
-            baby_steps[gt] = j + 1
+            if not dltable == None:
+                dltable.add_row(gt, j+1)
+            else:
+                baby_steps[gt] = j + 1
 
         self.fieldtable_full = baby_steps
         return self.fieldtable_full
-
-    def make_offline_Ftable(self, field, elt, outfile):
-        # This function makes a multiplication table to aid in computing discrete
-        # logarithims to speed up decryption of multiple messages encrypted with the
-        # same public/private key
-
-        baby_steps = {}
-        gt = oEC.toTupleFp12(field.one())
-        f = open(outfile, 'w')
-        for j in range((2**20)+1):
-            gt = oEC.tmulFp12(self.Gt, gt, oEC.toTupleFp12(elt), self.Gamma)
-            hashval = hashlib.sha224(gt.__str__()).hexdigest()
-            f.write(hashval + ',' + str(j+1) + '\n')
-        f.close()
-        f = mergesort(outfile)
-
 
     def make_full_ECtable(self, grp, point):
         # This function makes a multiplication table to aid in computing discrete
@@ -705,10 +699,17 @@ class CryptoGroup:
         self.ectable_full = baby_steps
         return self.ectable_full
     def log_full_field(self, dec):
-        table = self.fieldtable_full
-        if dec in table:
-            return table[dec]
-        return "No Match"
+        if self.use_dltable:
+            ret = self.dltable.lookup(dec)
+            if not ret == None:
+                return int(ret)
+            else:
+                return "No Match"
+        else:
+            table = self.fieldtable_full
+            if dec in table:
+                return table[dec]
+            return "No Match"
     def log_full_group(self, dec):
         table = self.ectable_full
         if dec in table:
