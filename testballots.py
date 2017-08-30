@@ -8,6 +8,7 @@ ballots.load()
 group = CryptoGroup()
 pk,sk = group.KeyGen()
 
+group.make_offline_Ftable(group.Gt, pk['e'],"mytable.tbl")
 #ECtable = group.make_ECtable(group.G, pk['g'])
 Ftable = group.make_full_Ftable(group.Gt, pk['e'])
 

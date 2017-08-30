@@ -16,8 +16,10 @@
 from __future__ import print_function
 import time
 import numpy as np
+import streamio
+from streamio import mergesort
 import itertools
-
+import hashlib
 import json
 import mathTools.field as field
 import mathTools.ellipticCurve as ellipticCurve
@@ -60,7 +62,7 @@ class CryptoGroup:
         fp0 = Fp.zero()
         fp1 = Fp.one()
 
-        print(Fp, " ...done")
+        #print(Fp, " ...done")
         ##### E[Fp] #####
         C = ellipticCurve.Curve(fp0, b * fp1, Fp)  # Y**2 = X**3+b
         PInf = ellipticCurve.ECPoint(infty=True)
@@ -71,10 +73,10 @@ class CryptoGroup:
 
         ##### Fp2b #####
         poly1 = field.polynom(Fp, [fp1, fp0, fp1])  # X**2+1
-        print(poly1)
+        #print(poly1)
 
         Fp2 = field.ExtensionField(Fp, poly1, rep='i')  # A**2 = -1
-        print(Fp2, " ...done")
+        #print(Fp2, " ...done")
         fp2_0 = Fp2.zero()
         fp2_1 = Fp2.one()
         fp2_ip = field.polynom(Fp, [fp1, fp0])  # 1*A+0
@@ -108,7 +110,7 @@ class CryptoGroup:
         ##### Fp12 #####
         poly6 = field.polynom(Fp6, [fp6_1, fp6_0, -fp6_xi])  # X**2-xi
         Fp12 = field.ExtensionField(Fp6, poly6)
-        print(Fp12, " ...done")
+        #print(Fp12, " ...done")
         fp12_0 = Fp12.zero()
         fp12_1 = Fp12.one()
         C12 = ellipticCurve.Curve(fp12_0, b * fp12_1, Fp12)  # Y**2 = X**3+b
@@ -667,6 +669,23 @@ class CryptoGroup:
 
         self.fieldtable_full = baby_steps
         return self.fieldtable_full
+
+    def make_offline_Ftable(self, field, elt, outfile):
+        # This function makes a multiplication table to aid in computing discrete
+        # logarithims to speed up decryption of multiple messages encrypted with the
+        # same public/private key
+
+        baby_steps = {}
+        gt = oEC.toTupleFp12(field.one())
+        f = open(outfile, 'w')
+        for j in range((2**20)+1):
+            gt = oEC.tmulFp12(self.Gt, gt, oEC.toTupleFp12(elt), self.Gamma)
+            hashval = hashlib.sha224(gt.__str__()).hexdigest()
+            f.write(hashval + ',' + str(j+1) + '\n')
+        f.close()
+        f = mergesort(outfile)
+
+
     def make_full_ECtable(self, grp, point):
         # This function makes a multiplication table to aid in computing discrete
         # logarithims to speed up decryption of multiple messages encrypted with the
