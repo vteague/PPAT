@@ -17,12 +17,15 @@ from __future__ import print_function
 import time
 import numpy as np
 import itertools
+
+import json
 import mathTools.field as field
 import mathTools.ellipticCurve as ellipticCurve
 import mathTools.pairing as pairing
 import ppat.ppats
 import mathTools.otosEC as oEC
 import gmpy2 as gmpy
+from gmpy2 import mpz
 from Crypto.Random.random import randint
 from Crypto.Random.random import getrandbits
 from mathTools.otosEC import OptimAtePairing as e_hat
@@ -151,20 +154,63 @@ class CryptoGroup:
         #r1 = e_hat(g[0] + g[1], h[0] + h[1], self.Pair) * self.Gt.invert(r0 * r2)
         return (r0, r1, r2)
 
-    def KeyGen(self):
+    def save_public_key(self, pk, pk_file_path):
+        pk_json = {}
+        pk_json['g_0'] = pk['g'][0].digits(16)
+        pk_json['g_1'] = pk['g'][1].digits(16)
+        pk_json['g_2'] = pk['g'][2]
+        pk_json['h_0'] = pk['h'][0].digits(16)
+        pk_json['h_1'] = pk['h'][1].digits(16)
+        pk_json['h_2'] = pk['h'][2].digits(16)
+        pk_json['h_3'] = pk['h'][3].digits(16)
+        pk_json['h_4'] = pk['h'][4]
+        with open(pk_file_path, 'w') as outfile:
+            json.dump(pk_json, outfile, indent=True, sort_keys=True)
 
-        s = getrandbits(self.MAX_BITS)
+    def loadPublicKey(self, pk_file_path):
+        with open(pk_file_path) as data_file:
+            return json.load(data_file)
 
-        P1 = self.P * randint(0, int(self.n))
-        G1 = (self.G.neg(P1) * s, P1)  # Description of G1 - (g^{-s},g)
+    def saveSecretKey(self, sk, sk_file_path):
+        skJson = {}
+        skJson['s'] = sk['s']
+        with open(sk_file_path, 'w') as outfile:
+            json.dump(skJson, outfile, indent=True, sort_keys=True)
+        
+    def loadSecretKey(self, sk_file_path):
+        with open(sk_file_path) as data_file:
+            return json.load(data_file)
 
-        Q1 = self.Q * randint(0, int(self.n))
-        H1 = (self.H.neg(Q1) * s, Q1)  # Description of H1 - (h^{-s},h)
+    def KeyGen(self,key=None):
+        if key != None:
+            pubKey = key['pk']
+            secKey = key['sk']
+            s = secKey['s']
+            P1 = self.EFpTupleToPoint((mpz(pubKey['g_0'], base=16),
+                                       mpz(pubKey['g_1'], base=16),
+                                       pubKey['g_2']))
+            Q1 = self.EFp2TupleToPoint((mpz(pubKey['h_0'], base=16),
+                                        mpz(pubKey['h_1'], base=16),
+                                        mpz(pubKey['h_2'], base=16),
+                                        mpz(pubKey['h_3'], base=16),
+                                        pubKey['h_4']))
+            G1 = (self.G.neg(P1) * s, P1)  # Description of G1 - (g^{-s},g)
+            H1 = (self.H.neg(Q1) * s, Q1)  # Description of H1 - (h^{-s},h)
+            g = P1
+            h = Q1
+        else:
+            s = getrandbits(self.MAX_BITS)
 
-        # g = P*randint(0,int(n)) # Random element of G
-        # h = Q*randint(0,int(n))# Random element of H
-        g = P1
-        h = Q1
+            P1 = self.P * randint(0, int(self.n))
+            G1 = (self.G.neg(P1) * s, P1)  # Description of G1 - (g^{-s},g)
+
+            Q1 = self.Q * randint(0, int(self.n))
+            H1 = (self.H.neg(Q1) * s, Q1)  # Description of H1 - (h^{-s},h)
+
+            # g = P*randint(0,int(n)) # Random element of G
+            # h = Q*randint(0,int(n))# Random element of H
+            g = P1
+            h = Q1
 
         self.gt = e_hat(g, h, self.Pair)
         G1Pair = (oEC.toTupleFp12(e_hat(G1[0], h, self.Pair)),
@@ -190,6 +236,7 @@ class CryptoGroup:
               'Gt': self.Gt, 'g': gElem, 'h': hElem, 'e': self.gt,
               'G1xH1':(G1xH1_0, G1xH1_1), 'G1Pair':G1Pair, 'H1Pair':H1Pair}
 
+        
         def pi_1(g):
             if g[1] == 1:
                 output = g[0]
@@ -368,6 +415,10 @@ class CryptoGroup:
 
     def EFpTupleToPoint(self, elem):
         return oEC.toEFp(self.G, elem)
+    
+    def EFp2TupleToPoint(self, elem):
+        return oEC.toEFp2(self.H, elem)
+    
     def generate_blinding_factor(self, pk):
         """
         Generates a blinding factor within the fixed range
@@ -376,7 +427,7 @@ class CryptoGroup:
             Decide MAX_BLINDING_FACTOR range
             Provide proof of equality
         """
-        MAX_BLINDING_FACTOR = 2**5
+        MAX_BLINDING_FACTOR = 2**19
 
         # create a blinding factor
         blinding_factor = randint(1, MAX_BLINDING_FACTOR)
@@ -610,7 +661,7 @@ class CryptoGroup:
         baby_steps = {}
         gt = oEC.toTupleFp12(field.one())
 
-        for j in range((2**5)+1):
+        for j in range((2**20)+1):
             gt = oEC.tmulFp12(self.Gt, gt, oEC.toTupleFp12(elt), self.Gamma)
             baby_steps[gt] = j + 1
 
