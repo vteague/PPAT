@@ -119,11 +119,11 @@ def e(g, h):
 
     return r0, r1, r2
 
-def make_ECtable(group, base, max_dl=2**32, max_search=2**12):
+def make_EFptable(group, base, max_dl=2 ** 32, max_search=2 ** 12):
     """This function makes a multiplication table to aid in computing discrete
     logarithms to speed up decryption of multiple messages encrypted with the
     same public/private key
-    :param group is an elliptic curve group on Fp
+    :param group is an EFp group
     :param base is a tuple
     :param max_dl is the highest value that the DL can take
     :param max_search is the maximum number of steps that we agree to make during DL extraction
@@ -149,18 +149,18 @@ def make_ECtable(group, base, max_dl=2**32, max_search=2**12):
     return giant_steps
 
 
-def log_group(Group, a, b, table):
-    """Extracts the discrete log of b in base a in Group.
-    Assumes that self.ECtable contains precomputed values for base a
+def log_group_EFp(Group, a, b, table):
+    """Extracts the discrete log of b in base a in Group, which must be an EFp.
+    Assumes table contains precomputed values for base a
 
+    :param Group: EFp Group in which a and b lie
     :param a: base element as a tuple
-    :param b: element from which DL must be extracted as a tuple
-    :param Group: Group in which a and b lie
+    :param b: tuple from which DL must be extracted
     :param table: precomputed table for a
     :return: x: b == a**x
     """
     if table is None:
-        table = make_ECtable(Group, a)
+        table = make_EFptable(Group, a)
 
     i = 0
     while not gmpy.t_mod_2exp(b[0], 128) in table:
@@ -242,7 +242,7 @@ class TestFieldOp(unittest.TestCase):
 
     def test_EFp_DLog(self):
         Ptuple = oEC.toTupleEFp(P)
-        table = make_ECtable(EFp, Ptuple, max_dl=2**32, max_search=2**12)
+        table = make_EFptable(EFp, Ptuple, max_dl=2 ** 32, max_search=2 ** 12)
         t = time.time() - self.startTime
         print "%s: %.4f" % ("ECTable computation", t)
         s = getsizeof(table)
@@ -251,7 +251,7 @@ class TestFieldOp(unittest.TestCase):
         y = oEC.mulECP(EFp, Ptuple, x, sq=False)
         #print y
         t2 = time.time()
-        xc = log_group(EFp, Ptuple, y, table)
+        xc = log_group_EFp(EFp, Ptuple, y, table)
         t = time.time() - t2
         print "%s: %.4f" % ("DL Extraction", t)
         self.assertEqual(x, xc, 'DL extraction fails')
