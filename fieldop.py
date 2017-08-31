@@ -129,7 +129,6 @@ def make_EFptable(group, base, max_dl=2 ** 32, max_search=2 ** 12):
     :param max_search is the maximum number of steps that we agree to make during DL extraction
     """
     # Store the giant steps. Keys are truncated x coordinate of points, values are exponents
-
     giant_steps = {}
     table_size = max_dl / max_search + 1
     # Size of the giant steps (on the curve)
@@ -141,6 +140,7 @@ def make_EFptable(group, base, max_dl=2 ** 32, max_search=2 ** 12):
     # j performs as many steps as needed.
     # The '+1' handles the case when max_dl is not a square
     for j in xrange(table_size):
+        # key is 128 LSB's of x coordinate
         lsb_running_step = int(gmpy.t_mod_2exp(running_step[0], 128))
         giant_steps[lsb_running_step] = exponent
         running_step = oEC.addEFp(group, running_step, giant_step)
@@ -163,10 +163,14 @@ def log_group_EFp(Group, a, b, table):
         table = make_EFptable(Group, a)
 
     i = 0
-    while not gmpy.t_mod_2exp(b[0], 128) in table:
-        b = oEC.addEFp(Group, a, b)
+    c = b
+    while not gmpy.t_mod_2exp(c[0], 128) in table:
+        c = oEC.addEFp(Group, a, c)
         i += 1
-    return table[gmpy.t_mod_2exp(b[0], 128)] - i
+    dl = table[gmpy.t_mod_2exp(c[0], 128)] - i
+    adl = oEC.mulECP(EFp, a, dl, sq=False)
+    assert adl == b
+    return dl
 
 
 class TestFieldOp(unittest.TestCase):
@@ -240,7 +244,7 @@ class TestFieldOp(unittest.TestCase):
         print "%s: %.4f" % ("pairing on pairs -- Karatsuba", t)
         self.assertEqual(gt1, gt2, 'pairing on pairs seems inconsistent')
 
-    def test_EFp_DLog(self):
+    def test_DLog_EFp(self):
         Ptuple = oEC.toTupleEFp(P)
         table = make_EFptable(EFp, Ptuple, max_dl=2 ** 32, max_search=2 ** 12)
         t = time.time() - self.startTime
