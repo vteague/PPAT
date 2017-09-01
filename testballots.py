@@ -1,28 +1,28 @@
 import sys
 import os
 import time
-from ballots import Ballots
-from irv import IRV
-from dltable import DLTable
-from cryptogroup import CryptoGroup
+from irv.ballots import Ballots
+from irv.irv import IRV
+from crypto.dltable import DLTable
+from crypto.cryptogroup import CryptoGroup
 
-ballots = Ballots('samplevotes')
+ballots = Ballots('./data/samplevotes')
 ballots.load()
 group = CryptoGroup()
 #pk,sk = group.KeyGen()
-#group.save_public_key(pk,'pubkey.json')
-#group.saveSecretKey(sk,'secretkey.json')
+#group.save_public_key(pk,'./data/pubkey.json')
+#group.saveSecretKey(sk,'./data/secretkey.json')
 key = {}
-key['pk']=group.loadPublicKey('pubkey.json')
-key['sk']=group.loadSecretKey('secretkey.json')
+key['pk']=group.loadPublicKey('./data/pubkey.json')
+key['sk']=group.loadSecretKey('./data/secretkey.json')
 pk,sk = group.KeyGen(key)
 
-if os.path.exists('sortedtable.tbl'):
-    group.load_dltable('sortedtable.tbl', 72)
+if os.path.exists('./data/sortedtable.tbl'):
+    group.load_dltable('./data/sortedtable.tbl', 72)
 else:
     print("Creating DL Field Table")
     # Create a DLTable with the appropraite line length and file name
-    dltable = DLTable(group, 'unsortedtable.tbl', 72)
+    dltable = DLTable(group, './data/unsortedtable.tbl', 72)
 
     # Open the table for writing - i.e. we are creating a new table
     dltable.open(for_writing=True)
@@ -36,11 +36,11 @@ else:
 
     # Call the sort method, with an output file name - performs Unix Sort
     print("Starting sort")
-    dltable.sort("sortedtable.tbl")
+    dltable.sort("./data/sortedtable.tbl")
     print("Finished sort")
 
     # Create a new DLTable pointing to the sorted table
-    group.load_dltable('sortedtable.tbl', 72)
+    group.load_dltable('./data/sortedtable.tbl', 72)
 
 #group.make_full_Ftable(group.Gt, pk['e'],"mytable.tbl")
 #ECtable = group.make_ECtable(group.G, pk['g'])
