@@ -156,8 +156,8 @@ class Group(object):
     def encrypt(self, public_key, message):
         raise NotImplementedError('users must define encrypt to use this base class')
 
-
     def generate_blinding_factor(self, public_key, source_group, target_group):
+         t = public_key
 
     @abc.abstractmethod
     def negate(self, cipher):

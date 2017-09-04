@@ -3,7 +3,9 @@ import os
 import time
 from irv.ballots import Ballots
 from irv.irv import IRV
-from crypto.dltable import DLTable
+from crypto.cryptofield import CryptoField
+from crypto.memtable import MemTable
+from crypto.efptable import EFpTable
 from crypto.cryptogroup import CryptoGroup
 
 ballots = Ballots('./data/samplevotes')
@@ -20,6 +22,9 @@ pk,sk = group.KeyGen(key)
 if os.path.exists('./data/sortedtable.tbl'):
     group.load_dltable('./data/sortedtable.tbl', 72)
 else:
+    field = CryptoField()
+    memtable = MemTable()
+    table = EFpTable(memtable,field.G)
     print("Creating DL Field Table")
     # Create a DLTable with the appropraite line length and file name
     dltable = DLTable(group, './data/unsortedtable.tbl', 72)

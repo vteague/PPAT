@@ -19,7 +19,7 @@ from dltable import DLTable
 from Crypto.Random.random import randint
 from Crypto.Random.random import getrandbits
 from mathTools.otosEC import OptimAtePairing as e_hat
-
+from group import Group
 class TargetGroup(Group):
 
     def __init__(self, cryptofield, dltable):
@@ -40,7 +40,7 @@ class TargetGroup(Group):
         h1 = (oEC.mulECP(self.field.H, H1[0], b, True), oEC.mulECP(self.field.H, H1[1], b, True))
 
         gt_oec = oEC.toTupleFp12(gt)
-        gt_m = oEC.squareAndMultiplyFp12(Gt, gt_oec, M,
+        gt_m = oEC.squareAndMultiplyFp12(Gt, gt_oec, message,
                                          oEC.tmulFp12, oEC.tsqrtFp12, self.field.Gamma)
 
         gt_mXG1h1 = oEC.tmulFp12(Gt,
@@ -102,21 +102,24 @@ class TargetGroup(Group):
         C_doubleprime = {'C0': C0, 'C1': C1, 'C2': C2}
         return C_doubleprime
 
+    def negate(self, cipher):
+        return cipher
+
     def decrypt(self, sk, pk, C):
         s = sk['s']
 
-        c1_oec = oEC.squareAndMultiplyFp12(self.Gt, C['C1'], s,
-                                           oEC.tmulFp12, oEC.tsqrtFp12, self.Gamma)
+        c1_oec = oEC.squareAndMultiplyFp12(self.field.Gt, C['C1'], s,
+                                           oEC.tmulFp12, oEC.tsqrtFp12, self.field.Gamma)
 
-        c2_oec = oEC.squareAndMultiplyFp12(self.Gt, C['C2'], sk['s2'],
-                                           oEC.tmulFp12, oEC.tsqrtFp12, self.Gamma)
+        c2_oec = oEC.squareAndMultiplyFp12(self.field.Gt, C['C2'], sk['s2'],
+                                           oEC.tmulFp12, oEC.tsqrtFp12, self.field.Gamma)
 
         if C['C1'] == 1:
             #c_oec = oEC.toTupleFp12(C[0])
             c_oec = C[0]
         else:
-            c_oec = oEC.tmulFp12(self.Gt, C['C0'], c1_oec, self.Gamma)
-            c_oec = oEC.tmulFp12(self.Gt, c_oec, c2_oec, self.Gamma)
-        return self.dltable.extract(self.field.P, c_oec)
+            c_oec = oEC.tmulFp12(self.field.Gt, C['C0'], c1_oec, self.field.Gamma)
+            c_oec = oEC.tmulFp12(self.field.Gt, c_oec, c2_oec, self.field.Gamma)
+        return self.dltable.extract_from_full(c_oec)
 
 
