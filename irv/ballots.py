@@ -86,7 +86,7 @@ class Ballots:
         for ballot in self.ballots:
             ballot.encrypt_prefs(group, pubkey)
 
-    def run_count(self, group, pubkey, secretkey):
+    def run_count(self, sourcegrp, targetgrp, pubkey, secretkey):
         """Run the irv count on the ballots and return the tallies
         Args:
             group (CryptoGroup): crypto group to use for encryption
@@ -99,7 +99,7 @@ class Ballots:
         counter = 1
         for ballot in self.ballots:
             print("Adding ballot:", counter)
-            ballot.add_to_tally(group, pubkey, secretkey, tallies, self.eliminated)
+            ballot.add_to_tally(sourcegrp, targetgrp, pubkey, secretkey, tallies, self.eliminated)
             print("Finished adding ballot:", counter)
             counter = counter + 1
         return tallies

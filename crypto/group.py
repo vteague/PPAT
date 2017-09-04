@@ -35,6 +35,8 @@ from math import sqrt
 
 class Group(object):
     __metaclass__ = abc.ABCMeta
+    MAX_BLINDING_FACTOR = 2**9
+
     def __init__(self, cryptofield, dltable):
         self.field = cryptofield
         self.dltable = dltable
@@ -157,51 +159,25 @@ class Group(object):
         raise NotImplementedError('users must define encrypt to use this base class')
 
     @classmethod
-    def generate_blinding_factor(cls, public_key, source_group, target_group):
-        """
-        Generates a blinding factor within the fixed range
+    def generate_rand_int(cls):
+        return randint(1, cls.MAX_BLINDING_FACTOR)
 
-        TODO:
-            Decide MAX_BLINDING_FACTOR range
-            Provide proof of equality
-        """
-        MAX_BLINDING_FACTOR = 2**9
-
-        # create a blinding factor
-        blinding_factor = randint(1, MAX_BLINDING_FACTOR)
-
-        # Encrypt the blinding factor in the source and target
-        bf_in_ec = source_group.encrypt(public_key, blinding_factor)
-        bf_in_pair = target_group.encrypt(public_key, blinding_factor)
-
-        # TODO should provide a proof that the plaintext of bf_in_ec == bf_in_pair
-        return {'bfEC':bf_in_ec, 'bfPair':bf_in_pair}
-    
     @classmethod
     def switch(cls, sk, pk, blinded_cipher, blinding_factor_ec, source_group, target_group):
         """
             simulates encryption switching - needs review
         """
-        start = time.time()
         # Perform a decryption in the Pairing group to recover an integer (blindingfactor + m)
-        blinded_plaintext = self.Dec_tgt(sk, pk, blinded_cipher, table)
-        end = time.time()
-        print("Dec:", end-start)
+        blinded_plaintext = target_group.decrypt(sk, pk, blinded_cipher)
 
         # Encrypt blinded integer in EC group
-        start = time.time()
-        blinded_cipher_in_ec = self.Enc_src(pk, blinded_plaintext)
-        end = time.time()
-        print("Enc:", end-start)
+        blinded_cipher_in_ec = source_group.encrypt(pk, blinded_plaintext)
 
-        start = time.time()
         # Negate the blindingfactor in EC
-        negated_bf = self.negate_src(blinding_factor_ec)
+        negated_bf = source_group.negate(blinding_factor_ec)
         #  and add to the newly encrypted value in the EC group
         # thus removing the blinding factor
-        switched_cipher = self.Add_src(pk, blinded_cipher_in_ec, negated_bf)
-        end = time.time()
-        print("Neg:", end-start)
+        switched_cipher = source_group.add(pk, blinded_cipher_in_ec, negated_bf)
 
         return switched_cipher
 
@@ -222,5 +198,20 @@ class Group(object):
     @abc.abstractmethod
     def decrypt(self, sk, pk, C):
         raise NotImplementedError('users must define decrypt to use this base class')
-
     
+    @classmethod
+    def sim_switch(cls, sk, pk, cipher, sourcegrp, targetgrp):
+        """
+        Simulates performing a switch with 3 blinding factors representing 3 parties
+        """
+        blinding_factor = cls.generate_rand_int()
+
+        cipher_bf_source = sourcegrp.encrypt(pk,blinding_factor)
+        cipher_bf_target = targetgrp.encrypt(pk,blinding_factor)
+
+        blinded_cipher = targetgrp.add(pk, cipher, cipher_bf_target)
+        
+        switched_cipher = cls.switch(sk, pk,
+                                      blinded_cipher,
+                                      cipher_bf_source, sourcegrp, targetgrp)
+        return switched_cipher

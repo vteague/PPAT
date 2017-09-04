@@ -19,8 +19,9 @@ class IRV:
     """ IRV Counter
     for use with encryption switching """
 
-    def __init__(self, group, pubkey, secretkey):
-        self.group = group
+    def __init__(self, sourcegrp, targetgrp, pubkey, secretkey):
+        self.sourcegrp = sourcegrp
+        self.targetgrp = targetgrp
         self.pubkey = pubkey
         self.secretkey = secretkey
 
@@ -33,14 +34,14 @@ class IRV:
 
     def perform_round(self, ballots):
         """Perform a single round of IRV counting"""
-        tallies = ballots.run_count(self.group, self.pubkey, self.secretkey)
+        tallies = ballots.run_count(self.sourcegrp, self.targetgrp, self.pubkey, self.secretkey)
         dec_tally = []
         min_indexes = []
         min_idx = ballots.ballotcount
         candidateindex = 0
         for tally in tallies:
             if tally is not None:
-                decrypted_total = self.group.Dec_tgt(self.secretkey, self.pubkey, tally)
+                decrypted_total = self.targetgrp.decrypt(self.secretkey, self.pubkey, tally)
                 dec_tally.append(decrypted_total)
                 if decrypted_total < min_idx:
                     min_idx = decrypted_total

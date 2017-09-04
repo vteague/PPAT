@@ -82,8 +82,15 @@ class TestCrypto(unittest.TestCase):
         self.init_target_group()
         for j in range(0,1):
             testmsg = j
+            start = time.time()
             ciphertest = self.targetgrp.encrypt(self.public_key,testmsg)
+            t = time.time() - start
+            print "%s: %.4f" % ("Target Encrypt", t)
+            start = time.time()
             dec = self.targetgrp.decrypt(self.secret_key, self.public_key, ciphertest)
+            t = time.time() - start
+            print "%s: %.4f" % ("Target Decrypt", t)
+            
             self.assertEqual(dec, testmsg, 'Decrytion target fails')
 
     def test_target_addition(self):
@@ -92,16 +99,27 @@ class TestCrypto(unittest.TestCase):
         testmsgtwo = 6
         cipherone = self.targetgrp.encrypt(self.public_key,testmsgone)
         ciphertwo = self.targetgrp.encrypt(self.public_key,testmsgtwo)
+        start = time.time()
         cipheroneplustwo = self.targetgrp.add(self.public_key,cipherone,ciphertwo)
+        t = time.time() - start
+        print "%s: %.4f" % ("Target Addition", t)
+            
         dec = self.targetgrp.decrypt(self.secret_key, self.public_key, cipheroneplustwo)
         self.assertEqual(dec, testmsgone + testmsgtwo, 'addition target fails')
         
     def test_source_encdec(self):
         self.init_source_group()
-        for j in range(1,1):
+        for j in range(1,2):
             testmsg = j
+            start = time.time()
             ciphertest = self.sourcegrp.encrypt(self.public_key, testmsg)
+            t = time.time() - start
+            print "%s: %.4f" % ("Source Encrypt", t)
+            start = time.time()
             dec = self.sourcegrp.decrypt(self.secret_key, self.public_key, ciphertest)
+            t = time.time() - start
+            print "%s: %.4f" % ("Source Encrypt", t)
+            
             self.assertEqual(dec, testmsg, 'Decrytion source fails')
 
     def test_source_addition(self):
@@ -110,7 +128,11 @@ class TestCrypto(unittest.TestCase):
         testmsgtwo = 6
         cipherone = self.sourcegrp.encrypt(self.public_key,testmsgone)
         ciphertwo = self.sourcegrp.encrypt(self.public_key,testmsgtwo)
+        start = time.time()
         cipheroneplustwo = self.sourcegrp.add(self.public_key,cipherone,ciphertwo)
+        t = time.time() - start
+        print "%s: %.4f" % ("Source Addition", t)
+            
         dec = self.sourcegrp.decrypt(self.secret_key, self.public_key, cipheroneplustwo)
         self.assertEqual(dec, testmsgone + testmsgtwo, 'addition source fails')
     
@@ -121,7 +143,11 @@ class TestCrypto(unittest.TestCase):
         testmsgtwo = 6
         cipherone = self.sourcegrp.encrypt(self.public_key,testmsgone)
         ciphertwo = self.sourcegrp.encrypt(self.public_key,testmsgtwo)
+        start = time.time()
         cipheroneplustwo = self.sourcegrp.multiply(self.public_key,cipherone,ciphertwo)
+        t = time.time() - start
+        print "%s: %.4f" % ("Source Multiply", t)
+        
         dec = self.targetgrp.decrypt(self.secret_key, self.public_key, cipheroneplustwo)
         self.assertEqual(dec, testmsgone * testmsgtwo, 'multiply source fails')
 
@@ -143,11 +169,24 @@ class TestCrypto(unittest.TestCase):
         self.init_source_group()
         self.init_target_group()
         testmsgone = 2
-        cipherone = self.targetgrp.encrypt(self.public_key,testmsgone)
-        bf = Group.generate_blinding_factors(self.public_key, self.targetgrp, self.sourcegrp)
-        dec = self.targetgrp.decrypt(self.secret_key, self.public_key, ciphertest)
-        self.assertEqual(dec, testmsgone * testmsgtwo + testmsgthree, 'multiply source then add target fails')
-    
+        cipherone = self.targetgrp.encrypt(self.public_key, testmsgone)
+        start = time.time()
+        blinding_factor = Group.generate_rand_int()
+        target_bf = self.targetgrp.encrypt(self.public_key,blinding_factor)
+        source_bf = self.sourcegrp.encrypt(self.public_key,blinding_factor)
+        blinded_cipher = self.targetgrp.add(self.public_key, cipherone, target_bf)
+        switched_cipher = Group.switch(self.secret_key, self.public_key,
+                                       blinded_cipher,
+                                       source_bf, self.sourcegrp, self.targetgrp)
+        dec = self.sourcegrp.decrypt(self.secret_key, self.public_key, switched_cipher)
+        t = time.time() - start
+        print "%s: %.4f" % ("Switch", t)
+        
+        test_blinded_cipher = self.targetgrp.decrypt(self.secret_key, self.public_key, blinded_cipher)
+        self.assertEqual(test_blinded_cipher, testmsgone + blinding_factor, 'blinding failed')
+
+        self.assertEqual(dec, testmsgone, 'multiply source then add target fails')
+
 
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(TestCrypto)
