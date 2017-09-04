@@ -156,8 +156,55 @@ class Group(object):
     def encrypt(self, public_key, message):
         raise NotImplementedError('users must define encrypt to use this base class')
 
-    def generate_blinding_factor(self, public_key, source_group, target_group):
-         t = public_key
+    @classmethod
+    def generate_blinding_factor(cls, public_key, source_group, target_group):
+        """
+        Generates a blinding factor within the fixed range
+
+        TODO:
+            Decide MAX_BLINDING_FACTOR range
+            Provide proof of equality
+        """
+        MAX_BLINDING_FACTOR = 2**9
+
+        # create a blinding factor
+        blinding_factor = randint(1, MAX_BLINDING_FACTOR)
+
+        # Encrypt the blinding factor in the source and target
+        bf_in_ec = source_group.encrypt(public_key, blinding_factor)
+        bf_in_pair = target_group.encrypt(public_key, blinding_factor)
+
+        # TODO should provide a proof that the plaintext of bf_in_ec == bf_in_pair
+        return {'bfEC':bf_in_ec, 'bfPair':bf_in_pair}
+    
+    @classmethod
+    def switch(cls, sk, pk, blinded_cipher, blinding_factor_ec, source_group, target_group):
+        """
+            simulates encryption switching - needs review
+        """
+        start = time.time()
+        # Perform a decryption in the Pairing group to recover an integer (blindingfactor + m)
+        blinded_plaintext = self.Dec_tgt(sk, pk, blinded_cipher, table)
+        end = time.time()
+        print("Dec:", end-start)
+
+        # Encrypt blinded integer in EC group
+        start = time.time()
+        blinded_cipher_in_ec = self.Enc_src(pk, blinded_plaintext)
+        end = time.time()
+        print("Enc:", end-start)
+
+        start = time.time()
+        # Negate the blindingfactor in EC
+        negated_bf = self.negate_src(blinding_factor_ec)
+        #  and add to the newly encrypted value in the EC group
+        # thus removing the blinding factor
+        switched_cipher = self.Add_src(pk, blinded_cipher_in_ec, negated_bf)
+        end = time.time()
+        print("Neg:", end-start)
+
+        return switched_cipher
+
 
     @abc.abstractmethod
     def negate(self, cipher):

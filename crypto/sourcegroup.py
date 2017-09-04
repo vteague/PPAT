@@ -50,8 +50,8 @@ class SourceGroup(Group):
         g1 = (oEC.mulECP(self.field.G, G1[0], a), oEC.mulECP(self.field.G, G1[1], a))
         h1 = (oEC.mulECP(self.field.H, H1[0], b, True), oEC.mulECP(self.field.H, H1[1], b, True))
 
-        C_0 = (oEC.addEFp(self.field.G, oEC.mulECP(self.field.G, pk['g'], M), g1[0]), g1[1])
-        C_1 = (oEC.addEFp2(self.field.H, oEC.mulECP(self.field.H, pk['h'], M, True), h1[0]), h1[1])
+        C_0 = (oEC.addEFp(self.field.G, oEC.mulECP(self.field.G, public_key['g'], message), g1[0]), g1[1])
+        C_1 = (oEC.addEFp2(self.field.H, oEC.mulECP(self.field.H, public_key['h'], message, True), h1[0]), h1[1])
 
         C = {'C0': C_0, 'C1': C_1}
         return C
@@ -61,8 +61,8 @@ class SourceGroup(Group):
         Gt = public_key['Gt']
 
         G1xH1 = public_key['G1xH1']
-
-        cipher_pair = self.field.e(cipher_one, cipher_two)
+         
+        cipher_pair = self.field.e(cipher_one['C0'], cipher_two['C1'])
 
         ec_zero = oEC.toTupleFp12(cipher_pair[0])
         ec_one = oEC.toTupleFp12(cipher_pair[1])
@@ -114,4 +114,7 @@ class SourceGroup(Group):
         return c_doubleprime
     
     def decrypt(self, sk, pk, C):
-        
+        g = self.EFpTupleToPoint(pk['g'])
+        c0_0 = self.EFpTupleToPoint(C['C0'][0])
+        c0_1 = self.EFpTupleToPoint(C['C0'][1])
+        return self.dltable.extract(oEC.toTupleEFp(sk['pi_1']((g, 1))), oEC.toTupleEFp(sk['pi_1']((c0_0, c0_1))))

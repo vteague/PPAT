@@ -1,5 +1,5 @@
 import sys
-from cryptogroup import CryptoGroup
+from crypto.cryptogroup import CryptoGroup
 
 group = CryptoGroup()
 pk,sk = group.KeyGen()

@@ -15,7 +15,7 @@ class EFp12Table(DLTable):
         # same public/private key
 
         gt = oEC.toTupleFp12(self.group.Gt.one())
-
+        self.table.add_row(gt, 0)
         for j in range((2**10)+1):
             gt = oEC.tmulFp12(self.group.Gt, gt, oEC.toTupleFp12(elt), self.group.Gamma)
             self.table.add_row(gt, j+1)

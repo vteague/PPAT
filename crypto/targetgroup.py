@@ -122,4 +122,4 @@ class TargetGroup(Group):
             c_oec = oEC.tmulFp12(self.field.Gt, c_oec, c2_oec, self.field.Gamma)
         return self.dltable.extract_from_full(c_oec)
 
-
+    

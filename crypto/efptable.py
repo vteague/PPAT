@@ -10,6 +10,13 @@ class EFpTable(DLTable):
         super(EFpTable, self).__init__(table, group)
 
     def build(self, base, max_dl=2 ** 32, max_search=2 ** 12):
+        pt = base
+        self.table.add_row(pt, 0)
+        for j in xrange(2**10+1):
+            self.table.add_row(pt, j+1)
+            pt = oEC.addEFp(self.group, pt, base)
+            
+    def buildnew(self, base, max_dl=2 ** 32, max_search=2 ** 12):
         """This function makes a multiplication table to aid in computing discrete
         logarithms to speed up decryption of multiple messages encrypted with the
         same public/private key
@@ -40,6 +47,16 @@ class EFpTable(DLTable):
 
 
     def extract(self, a, b):
+        i = 0
+        lookup = self.table.lookup(b)
+        while lookup is None:
+            b = oEC.addEFp(self.group, a, b)
+            i += 1
+            lookup = self.table.lookup(b)
+        return lookup
+
+
+    def extractnew(self, a, b):
         """Extracts the discrete log of b in base a in Group, which must be an EFp.
         Assumes table contains precomputed values for base a
 
