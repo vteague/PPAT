@@ -117,4 +117,4 @@ class SourceGroup(Group):
         g = self.EFpTupleToPoint(pk['g'])
         c0_0 = self.EFpTupleToPoint(C['C0'][0])
         c0_1 = self.EFpTupleToPoint(C['C0'][1])
-        return self.dltable.extract(oEC.toTupleEFp(sk['pi_1']((g, 1))), oEC.toTupleEFp(sk['pi_1']((c0_0, c0_1))))
+        return self.dltable.extract(pk['g'], oEC.toTupleEFp(sk['pi_1']((c0_0, c0_1))))

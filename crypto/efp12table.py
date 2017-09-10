@@ -33,7 +33,7 @@ class EFp12Table(DLTable):
         :param max_dl is the highest value that the DL can take
         :param max_search is the maximum number of steps that we agree to make during DL extraction
         """
-
+        print(base)
         giant_step =base * max_search
         # Store the giant steps. Keys are truncated x coordinate of points, values are exponents
         print(giant_step)
@@ -66,9 +66,9 @@ class EFp12Table(DLTable):
         :return: x: b == a**x
         """
         i = 0
-        lookup = self.table.lookup(gmpy.t_mod_2exp(b[0], 128))
+        lookup = self.table.lookup(int(gmpy.t_mod_2exp(b[0], 128)))
         while lookup is None:
             b = oEC.addEFp(self.group, a, b)
             i += 1
-            lookup = self.table.lookup(gmpy.t_mod_2exp(b[0], 128))
+            lookup = self.table.lookup(int(gmpy.t_mod_2exp(b[0], 128)))
         return lookup - i

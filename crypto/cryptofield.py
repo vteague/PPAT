@@ -83,6 +83,7 @@ class CryptoField:
         self.G = EFp
         self.p = p
         self.Gamma = oEC.prec_gamma(Fp12, u, c, d)
+        self.EFp12=EFp12 
         #r = randint(0, int(n - 1))
         #gtr = gt ** r
 

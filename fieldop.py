@@ -164,6 +164,7 @@ def log_group_EFp(Group, a, b, table):
 
     i = 0
     c = b
+    print(c[0])
     while not gmpy.t_mod_2exp(c[0], 128) in table:
         c = oEC.addEFp(Group, a, c)
         i += 1
