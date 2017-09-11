@@ -107,7 +107,6 @@ class TargetGroup(Group):
 
     def decrypt(self, sk, pk, C):
         s = sk['s']
-
         c1_oec = oEC.squareAndMultiplyFp12(self.field.Gt, C['C1'], s,
                                            oEC.tmulFp12, oEC.tsqrtFp12, self.field.Gamma)
 
@@ -120,4 +119,4 @@ class TargetGroup(Group):
         else:
             c_oec = oEC.tmulFp12(self.field.Gt, C['C0'], c1_oec, self.field.Gamma)
             c_oec = oEC.tmulFp12(self.field.Gt, c_oec, c2_oec, self.field.Gamma)
-        return self.dltable.extract_from_full(c_oec)
+        return self.dltable.extract(oEC.toTupleFp12(pk['e']), c_oec)

@@ -32,7 +32,7 @@ class TestCrypto(unittest.TestCase):
             pk, sk = self.sourcegrp.key_gen(key=key)
             self.public_key = pk;
             self.secret_key = sk;
-            table.build(pk['g'], 2 ** 32, 2 ** 12)
+            table.build(pk['g'], 2 ** 16, 2 ** 6)
 
     def init_target_group(self):
         if self.targetgrp == None:
@@ -46,7 +46,7 @@ class TestCrypto(unittest.TestCase):
             pk, sk = self.targetgrp.key_gen(key=key)
             self.public_key = pk;
             self.secret_key = sk;
-            table.make_full_Ftable(pk['e'])
+            table.build(pk['e'], 2 ** 16, 2 ** 6)
     """    
     def test_EFp_DLog(self):
         field = CryptoField()

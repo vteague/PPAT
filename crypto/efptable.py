@@ -8,6 +8,7 @@ class EFpTable(DLTable):
 
     def __init__(self, table, group):
         super(EFpTable, self).__init__(table, group)
+        self.giant_step_size=0
 
     def build(self, base, max_dl=2 ** 32, max_search=2 ** 12):
         """This function makes a multiplication table to aid in computing discrete
@@ -18,7 +19,7 @@ class EFpTable(DLTable):
         :param max_search is the maximum number of steps that we agree to make during DL extraction
         """
         # Store the giant steps. Keys are truncated x coordinate of points, values are exponents
-
+        self.giant_step_size = max_search
         giant_steps = {}
         table_size = max_dl / max_search + 1
         # Size of the giant steps (on the curve)
@@ -51,9 +52,13 @@ class EFpTable(DLTable):
         """
         i = 0
         lookup = self.table.lookup(int(gmpy.t_mod_2exp(b[0], 128)))
-        while lookup is None:
+        while lookup is None and i<=self.giant_step_size:
             b = oEC.addEFp(self.group, a, b)
             i += 1
             lookup = self.table.lookup(int(gmpy.t_mod_2exp(b[0], 128)))
-        return lookup - i
-
+        if lookup is None:
+            return lookup
+        else:
+            adl = oEC.mulECP(self.group, a, lookup, sq=False)
+            assert adl == b
+            return lookup - i
