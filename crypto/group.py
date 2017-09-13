@@ -61,6 +61,7 @@ class Group(object):
     def save_secret_key(self, sk, sk_file_path):
         sk_json = {}
         sk_json['s'] = sk['s']
+        sk_json['sprime'] = sk['sprime']
         with open(sk_file_path, 'w') as outfile:
             json.dump(sk_json, outfile, indent=True, sort_keys=True)
 
@@ -73,6 +74,7 @@ class Group(object):
             pubKey = key['pk']
             secKey = key['sk']
             s = secKey['s']
+            sprime = secKey['sprime']
             P1 = self.EFpTupleToPoint((mpz(pubKey['g_0'], base=16),
                                        mpz(pubKey['g_1'], base=16),
                                        pubKey['g_2']))
@@ -87,12 +89,13 @@ class Group(object):
             h = Q1
         else:
             s = getrandbits(self.MAX_BITS)
+            sprime = getrandbits(self.MAX_BITS)
 
             P1 = self.P * randint(0, int(self.n))
             G1 = (self.G.neg(P1) * s, P1)  # Description of G1 - (g^{-s},g)
 
             Q1 = self.Q * randint(0, int(self.n))
-            H1 = (self.H.neg(Q1) * s, Q1)  # Description of H1 - (h^{-s},h)
+            H1 = (self.H.neg(Q1) * sprime, Q1)  # Description of H1 - (h^{-s},h)
 
             # g = P*randint(0,int(n)) # Random element of G
             # h = Q*randint(0,int(n))# Random element of H
@@ -145,7 +148,7 @@ class Group(object):
                 output = gt['C0'] * (gt['C1']**s) * (gt['C2']**(s**2))
             return output
 
-        sk = {'pi_1': pi_1, 'pi_2': pi_2, 'pi_t': pi_t, 's':s, 's2':s**2}
+        sk = {'pi_1': pi_1, 'pi_2': pi_2, 'pi_t': pi_t, 'sprime':sprime, 's':s, 'ssprime':s**sprime}
         return pk, sk
     def EFpTupleToPoint(self, elem):
         return oEC.toEFp(self.field.G, elem)
