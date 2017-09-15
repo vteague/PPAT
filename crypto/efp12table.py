@@ -18,7 +18,7 @@ class EFp12Table(DLTable):
         :param max_dl is the highest value that the DL can take
         :param max_search is the maximum number of steps that we agree to make during DL extraction
         """
-        self.giant_step_size = max_search
+        self.giant_step_size = max_search * 2
         giant_step = oEC.squareAndMultiplyFp12(self.group.Gt, oEC.toTupleFp12(base), max_search,
                                                oEC.tmulFp12, oEC.tsqrtFp12, self.group.Gamma)
         # Store the giant steps. Keys are truncated x coordinate of points, values are exponents

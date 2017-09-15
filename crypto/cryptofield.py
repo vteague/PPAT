@@ -20,10 +20,10 @@ class CryptoField:
         u = gmpy.mpz(-(2 ** 62 + 2 ** 55 + 1))  # p is 256-bit long
 
         p = CryptoField.pr(u)
-        n = CryptoField.nr(u)
+        self.n = CryptoField.nr(u)
 
         assert gmpy.is_prime(p)
-        assert gmpy.is_prime(n)
+        assert gmpy.is_prime(self.n)
 
         # t = 6 * u ** 2 + 1
 
@@ -37,7 +37,7 @@ class CryptoField:
         PInf = ellipticCurve.ECPoint(infty=True)
         EFp = ellipticCurve.ECGroup(Fp, C, PInf)
         self.P = EFp.elem((-d ** 2) * fp1, (c ** 2) * fp1)  # P  is a generator of EFp of order n (n*P = Pinf)
-        assert n * self.P == PInf
+        assert self.n * self.P == PInf
 
         # E[Fp2]
         poly1 = field.polynom(Fp, [fp1, fp0, fp1])  # X**2+1
@@ -53,9 +53,9 @@ class CryptoField:
         EFp2 = ellipticCurve.ECGroup(Fp2, C2, PInf2)
 
         u0 = EFp2.elem((-d) * fp2_i, c * fp2_1)  # EC point (-d*A,c)
-        h = 2 * p - n
+        h = 2 * p - self.n
         self.Q = u0 * h  # Q is a generator of G2 of order n
-        assert n * self.Q == PInf2
+        assert self.n * self.Q == PInf2
 
         # Fp6
         poly3 = field.polynom(Fp2, [fp2_1, fp2_0, fp2_0, -xi])  # X**3-xi
@@ -75,7 +75,7 @@ class CryptoField:
 
         gamma = oEC.prec_gamma(Fp12, u, c, d)
         Qpr = oEC.psi(EFp12, self.Q)  # Qpr lives in E[Fp12b]
-        self.Pair = pairing.Pairing(EFp, EFp12, C, self.P, self.Q, n, Qpr, oEC.frobenius, gamma)
+        self.Pair = pairing.Pairing(EFp, EFp12, C, self.P, self.Q, self.n, Qpr, oEC.frobenius, gamma)
         self.gt = e_hat(self.P, self.Q, self.Pair)
         self.Gt = Fp12
         self.e_hat = e_hat

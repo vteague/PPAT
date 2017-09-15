@@ -19,7 +19,7 @@ class EFpTable(DLTable):
         :param max_search is the maximum number of steps that we agree to make during DL extraction
         """
         # Store the giant steps. Keys are truncated x coordinate of points, values are exponents
-        self.giant_step_size = max_search
+        self.giant_step_size = max_search * 2
         giant_steps = {}
         table_size = max_dl / max_search + 1
         # Size of the giant steps (on the curve)
