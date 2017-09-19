@@ -20,10 +20,10 @@ class CryptoField:
         u = gmpy.mpz(-(2 ** 62 + 2 ** 55 + 1))  # p is 256-bit long
 
         p = CryptoField.pr(u)
-        n = CryptoField.nr(u)
+        self.n = CryptoField.nr(u)
 
         assert gmpy.is_prime(p)
-        assert gmpy.is_prime(n)
+        assert gmpy.is_prime(self.n)
 
         # t = 6 * u ** 2 + 1
 
@@ -37,7 +37,7 @@ class CryptoField:
         PInf = ellipticCurve.ECPoint(infty=True)
         EFp = ellipticCurve.ECGroup(Fp, C, PInf)
         self.P = EFp.elem((-d ** 2) * fp1, (c ** 2) * fp1)  # P  is a generator of EFp of order n (n*P = Pinf)
-        assert n * self.P == PInf
+        assert self.n * self.P == PInf
 
         # E[Fp2]
         poly1 = field.polynom(Fp, [fp1, fp0, fp1])  # X**2+1
@@ -53,9 +53,9 @@ class CryptoField:
         EFp2 = ellipticCurve.ECGroup(Fp2, C2, PInf2)
 
         u0 = EFp2.elem((-d) * fp2_i, c * fp2_1)  # EC point (-d*A,c)
-        h = 2 * p - n
+        h = 2 * p - self.n
         self.Q = u0 * h  # Q is a generator of G2 of order n
-        assert n * self.Q == PInf2
+        assert self.n * self.Q == PInf2
 
         # Fp6
         poly3 = field.polynom(Fp2, [fp2_1, fp2_0, fp2_0, -xi])  # X**3-xi
@@ -75,7 +75,7 @@ class CryptoField:
 
         gamma = oEC.prec_gamma(Fp12, u, c, d)
         Qpr = oEC.psi(EFp12, self.Q)  # Qpr lives in E[Fp12b]
-        self.Pair = pairing.Pairing(EFp, EFp12, C, self.P, self.Q, n, Qpr, oEC.frobenius, gamma)
+        self.Pair = pairing.Pairing(EFp, EFp12, C, self.P, self.Q, self.n, Qpr, oEC.frobenius, gamma)
         self.gt = e_hat(self.P, self.Q, self.Pair)
         self.Gt = Fp12
         self.e_hat = e_hat
@@ -100,46 +100,9 @@ class CryptoField:
 
     def e(self, g, h):
         """Evaluates the bilinear operator on pairs of elements of G and H.
-        Uses Karatsuba's trick.
-        Arguments:
-            pp, the public parameters describing the groups
-            g, a pair of elements of G
-            h, a pair of elements of H
-        Returns a triple of elements of Gt
         """
-        r0 = e_hat(oEC.toEFp(self.G, g[0]), oEC.toEFp2(self.H, h[0]), self.Pair)
-        r2 = e_hat(oEC.toEFp(self.G, g[1]), oEC.toEFp2(self.H, h[1]), self.Pair)
-        r1 = e_hat(oEC.toEFp(self.G, oEC.addEFp(self.G, g[0], g[1])),
-                   oEC.toEFp2(self.H, oEC.addEFp2(self.G, h[0], h[1])),
-                   self.Pair) * self.Gt.invert(r0 * r2)
-        #r1 = e_hat(g[0] + g[1], h[0] + h[1], self.Pair) * self.Gt.invert(r0 * r2)
-        return (r0, r1, r2)
-
-    def make_EFptable(group, base, max_dl=2 ** 32, max_search=2 ** 12):
-        """This function makes a multiplication table to aid in computing discrete
-        logarithms to speed up decryption of multiple messages encrypted with the
-        same public/private key
-        :param group is an EFp group
-        :param base is a tuple
-        :param max_dl is the highest value that the DL can take
-        :param max_search is the maximum number of steps that we agree to make during DL extraction
-        """
-        # Store the giant steps. Keys are truncated x coordinate of points, values are exponents
-
-        giant_steps = {}
-        table_size = max_dl / max_search + 1
-        # Size of the giant steps (on the curve)
-        giant_step = oEC.mulECP(group, base, max_search)
-        # Counter of current value of the exponent
-        exponent = max_search
-        # Position of that counter on the curve
-        running_step = giant_step
-        # j performs as many steps as needed.
-        # The '+1' handles the case when max_dl is not a square
-        for j in xrange(table_size):
-            lsb_running_step = int(gmpy.t_mod_2exp(running_step[0], 128))
-            giant_steps[lsb_running_step] = exponent
-            running_step = oEC.addEFp(group, running_step, giant_step)
-            exponent += max_search
-            # print("Giant steps: ", giant_steps)
-        return giant_steps
+        r00 = e_hat(oEC.toEFp(self.G, g[0]), oEC.toEFp2(self.H, h[0]), self.Pair)
+        r01 = e_hat(oEC.toEFp(self.G, g[0]), oEC.toEFp2(self.H, h[1]), self.Pair)
+        r10 = e_hat(oEC.toEFp(self.G, g[1]), oEC.toEFp2(self.H, h[0]), self.Pair)
+        r11 = e_hat(oEC.toEFp(self.G, g[1]), oEC.toEFp2(self.H, h[1]), self.Pair)
+        return (r00, r01, r10, r11)

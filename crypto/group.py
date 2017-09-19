@@ -36,7 +36,8 @@ from math import sqrt
 class Group(object):
     __metaclass__ = abc.ABCMeta
     MAX_BLINDING_FACTOR = 2**9
-
+# maximum size in bits of secret
+    MAX_BITS = 100
     def __init__(self, cryptofield, dltable):
         self.field = cryptofield
         self.dltable = dltable
@@ -61,6 +62,7 @@ class Group(object):
     def save_secret_key(self, sk, sk_file_path):
         sk_json = {}
         sk_json['s'] = sk['s']
+        sk_json['sprime'] = sk['sprime']
         with open(sk_file_path, 'w') as outfile:
             json.dump(sk_json, outfile, indent=True, sort_keys=True)
 
@@ -73,6 +75,7 @@ class Group(object):
             pubKey = key['pk']
             secKey = key['sk']
             s = secKey['s']
+            sprime = secKey['sprime']
             P1 = self.EFpTupleToPoint((mpz(pubKey['g_0'], base=16),
                                        mpz(pubKey['g_1'], base=16),
                                        pubKey['g_2']))
@@ -82,29 +85,31 @@ class Group(object):
                                         mpz(pubKey['h_3'], base=16),
                                         pubKey['h_4']))
             G1 = (self.field.G.neg(P1) * s, P1)  # Description of G1 - (g^{-s},g)
-            H1 = (self.field.H.neg(Q1) * s, Q1)  # Description of H1 - (h^{-s},h)
+            H1 = (self.field.H.neg(Q1) * sprime, Q1)  # Description of H1 - (h^{-s},h)
+            
             g = P1
             h = Q1
         else:
             s = getrandbits(self.MAX_BITS)
+            sprime = getrandbits(self.MAX_BITS)
 
-            P1 = self.P * randint(0, int(self.n))
-            G1 = (self.G.neg(P1) * s, P1)  # Description of G1 - (g^{-s},g)
+            P1 = self.field.P * randint(0, int(self.field.n))
+            G1 = (self.field.G.neg(P1) * s, P1)  # Description of G1 - (g^{-s},g)
 
-            Q1 = self.Q * randint(0, int(self.n))
-            H1 = (self.H.neg(Q1) * s, Q1)  # Description of H1 - (h^{-s},h)
-
+            Q1 = self.field.Q * randint(0, int(self.field.n))
+            H1 = (self.field.H.neg(Q1) * sprime , Q1)  # Description of H1 - (h^{-s},h)
             # g = P*randint(0,int(n)) # Random element of G
             # h = Q*randint(0,int(n))# Random element of H
             g = P1
             h = Q1
 
         self.gt = e_hat(g, h, self.field.Pair)
-        G1Pair = (oEC.toTupleFp12(e_hat(G1[0], h, self.field.Pair)),
-                  oEC.toTupleFp12(e_hat(G1[1], h, self.field.Pair)), oEC.toTupleFp12(self.field.Gt.one()))
-        H1Pair = (oEC.toTupleFp12(e_hat(g, H1[0], self.field.Pair)),
-                  oEC.toTupleFp12(e_hat(g, H1[1], self.field.Pair)), oEC.toTupleFp12(self.field.Gt.one()))
-
+        gtelem = oEC.toTupleFp12(self.gt)
+        gt_s = oEC.squareAndMultiplyFp12(self.field.Gt, gtelem, s, oEC.tmulFp12, oEC.tsqrtFp12, self.field.Gamma)
+        gt_sprime = oEC.squareAndMultiplyFp12(self.field.Gt, gtelem, sprime, oEC.tmulFp12, oEC.tsqrtFp12, self.field.Gamma)
+        gt_ssprime = oEC.squareAndMultiplyFp12(self.field.Gt, gtelem, (s*sprime), oEC.tmulFp12, oEC.tsqrtFp12, self.field.Gamma)
+        gt_ssprime = oEC.toTupleFp12(self.field.Gt.invert(oEC.toFp12elem(self.field.Gt,gt_ssprime)))
+        
         # Convert G1 into oEC tuples
         G1_0_elem = oEC.toTupleEFp(self.field.G.elem(G1[0].x, G1[0].y))
         G1_1_elem = oEC.toTupleEFp(self.field.G.elem(G1[1].x, G1[1].y))
@@ -117,11 +122,9 @@ class Group(object):
         hElem = oEC.toTupleEFp2(h)
 
         # Pre-compute and convert G1[0] * H1[0] and G1[1] * H1[1]
-        G1xH1_0 = oEC.tmulFp12(self.field.Gt, G1Pair[0], H1Pair[0], self.field.Gamma)
-        G1xH1_1 = oEC.tmulFp12(self.field.Gt, G1Pair[1], H1Pair[1], self.field.Gamma)
         pk = {'G': self.field.G, 'G1': G1Elem, 'H': self.field.H, 'H1': H1Elem,
               'Gt': self.field.Gt, 'g': gElem, 'h': hElem, 'e': self.gt,
-              'G1xH1':(G1xH1_0, G1xH1_1), 'G1Pair':G1Pair, 'H1Pair':H1Pair}
+              'gt_s': gt_s, 'gt_sprime': gt_sprime, 'gt_ssprime': gt_ssprime}
 
         def pi_1(g):
             if g[1] == 1:
@@ -137,15 +140,8 @@ class Group(object):
                 output = h[0] + (h[1] * s)  # pi_2((h1,h2)) = h1 * h2^s
             return output
 
-        def pi_t(gt):
-            if gt['C1'] == 1:
-                output = gt[0]
-            else:
-                # pi_t((gt1,gt2,gt3)) = gt1 * gt2^s * gt3^{s^2}
-                output = gt['C0'] * (gt['C1']**s) * (gt['C2']**(s**2))
-            return output
-
-        sk = {'pi_1': pi_1, 'pi_2': pi_2, 'pi_t': pi_t, 's':s, 's2':s**2}
+        sk = {'pi_1': pi_1, 'pi_2': pi_2, 'sprime':sprime, 's':s, 'ssprime':s*sprime}
+        
         return pk, sk
     def EFpTupleToPoint(self, elem):
         return oEC.toEFp(self.field.G, elem)
