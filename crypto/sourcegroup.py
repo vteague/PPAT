@@ -57,13 +57,12 @@ class SourceGroup(Group):
         return C
 
     def multiply(self, public_key, cipher_one, cipher_two):
-        c3 = e_hat(oEC.toEFp(self.field.G, cipher_one['C0'][0]), oEC.toEFp2(self.field.H, cipher_two['C1'][0]), self.field.Pair)
-        c2 = e_hat(oEC.toEFp(self.field.G, cipher_one['C0'][0]), oEC.toEFp2(self.field.H, cipher_two['C1'][1]), self.field.Pair)
-        c1 = e_hat(oEC.toEFp(self.field.G, cipher_one['C0'][1]), oEC.toEFp2(self.field.H, cipher_two['C1'][0]), self.field.Pair)
-        c0 = e_hat(oEC.toEFp(self.field.G, cipher_one['C0'][1]), oEC.toEFp2(self.field.H, cipher_two['C1'][1]), self.field.Pair)
-    
-        #c_one = oEC.tmulFp12(self.field.Gt, c_one, G1xH1[1], self.field.Gamma)
 
+        c0 = e_hat(oEC.toEFp(self.field.G, cipher_one['C0'][1]), oEC.toEFp2(self.field.H, cipher_two['C1'][1]), self.field.Pair)
+        c1 = e_hat(oEC.toEFp(self.field.G, cipher_one['C0'][1]), oEC.toEFp2(self.field.H, cipher_two['C1'][0]), self.field.Pair)
+        c2 = e_hat(oEC.toEFp(self.field.G, cipher_one['C0'][0]), oEC.toEFp2(self.field.H, cipher_two['C1'][1]), self.field.Pair)
+        c3 = e_hat(oEC.toEFp(self.field.G, cipher_one['C0'][0]), oEC.toEFp2(self.field.H, cipher_two['C1'][0]), self.field.Pair)
+        
         cipher_prime = {'C0': oEC.toTupleFp12(c0), 'C1': oEC.toTupleFp12(c1), 'C2':oEC.toTupleFp12(c2), 'C3':oEC.toTupleFp12(c3)}
 
         return cipher_prime  # C = e(C0,C1) * e(g,h1) * e(g1,h)

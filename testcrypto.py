@@ -139,8 +139,8 @@ class TestCrypto(unittest.TestCase):
     def test_source_multiply(self):
         self.init_source_group()
         self.init_target_group()
-        testmsgone = 2
-        testmsgtwo = 3
+        testmsgone = 10
+        testmsgtwo = 2
         cipherone = self.sourcegrp.encrypt(self.public_key,testmsgone)
         ciphertwo = self.sourcegrp.encrypt(self.public_key,testmsgtwo)
         start = time.time()
@@ -149,7 +149,6 @@ class TestCrypto(unittest.TestCase):
         print "%s: %.4f" % ("Source Multiply", t)
         
         dec = self.targetgrp.decrypt(self.secret_key, self.public_key, cipheroneplustwo)
-        print dec
         self.assertEqual(dec, testmsgone * testmsgtwo, 'multiply source fails')
 
     def test_source_multiply_then_add(self):

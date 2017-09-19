@@ -43,9 +43,9 @@ class TargetGroup(Group):
                                            oEC.tmulFp12, oEC.tsqrtFp12, self.field.Gamma)
 
         c3 = oEC.tmulFp12(Gt, gt_m, gt_ssabc, self.field.Gamma)
-        c2 = oEC.squareAndMultiplyFp12(Gt, public_key['gt_sprime'], u3,
+        c1 = oEC.squareAndMultiplyFp12(Gt, public_key['gt_sprime'], u3,
                                        oEC.tmulFp12, oEC.tsqrtFp12, self.field.Gamma)
-        c1 = oEC.squareAndMultiplyFp12(Gt, public_key['gt_s'], u2,
+        c2 = oEC.squareAndMultiplyFp12(Gt, public_key['gt_s'], u2,
                                        oEC.tmulFp12, oEC.tsqrtFp12, self.field.Gamma)
         c0 = oEC.squareAndMultiplyFp12(Gt, gt_oec, u1,
                                        oEC.tmulFp12, oEC.tsqrtFp12, self.field.Gamma)
@@ -74,10 +74,10 @@ class TargetGroup(Group):
         c0_oec = oEC.squareAndMultiplyFp12(self.field.Gt, C['C0'], sk['s']*sk['sprime'],
                                            oEC.tmulFp12, oEC.tsqrtFp12, self.field.Gamma)
 
-        c1_oec = oEC.squareAndMultiplyFp12(self.field.Gt, C['C1'], sk['sprime'],
+        c1_oec = oEC.squareAndMultiplyFp12(self.field.Gt, C['C1'], sk['s'],
                                            oEC.tmulFp12, oEC.tsqrtFp12, self.field.Gamma)
 
-        c2_oec = oEC.squareAndMultiplyFp12(self.field.Gt, C['C2'], sk['s'],
+        c2_oec = oEC.squareAndMultiplyFp12(self.field.Gt, C['C2'], sk['sprime'],
                                            oEC.tmulFp12, oEC.tsqrtFp12, self.field.Gamma)
 
         if C['C1'] == 1:

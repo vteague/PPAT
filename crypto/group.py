@@ -85,7 +85,8 @@ class Group(object):
                                         mpz(pubKey['h_3'], base=16),
                                         pubKey['h_4']))
             G1 = (self.field.G.neg(P1) * s, P1)  # Description of G1 - (g^{-s},g)
-            H1 = (self.field.H.neg(Q1) * s, Q1)  # Description of H1 - (h^{-s},h)
+            H1 = (self.field.H.neg(Q1) * sprime, Q1)  # Description of H1 - (h^{-s},h)
+            
             g = P1
             h = Q1
         else:
@@ -96,8 +97,7 @@ class Group(object):
             G1 = (self.field.G.neg(P1) * s, P1)  # Description of G1 - (g^{-s},g)
 
             Q1 = self.field.Q * randint(0, int(self.field.n))
-            H1 = (self.field.H.neg(Q1) * sprime, Q1)  # Description of H1 - (h^{-s},h)
-
+            H1 = (self.field.H.neg(Q1) * sprime , Q1)  # Description of H1 - (h^{-s},h)
             # g = P*randint(0,int(n)) # Random element of G
             # h = Q*randint(0,int(n))# Random element of H
             g = P1
