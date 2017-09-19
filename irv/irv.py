@@ -27,10 +27,11 @@ class IRV:
 
     def perform_count(self, ballots):
         """start an IRV count on the specified ballots"""
-        for round_count in range(0, ballots.candcount-1):
+        for round_count in range(0, ballots.candcount):
             print("Starting tally round", round_count)
             round_result = self.perform_round(ballots)
-            ballots.eliminate(round_result['removeidx'])
+            if round_result['removeidx'] != None:
+                ballots.eliminate(round_result['removeidx'])
 
     def perform_round(self, ballots):
         """Perform a single round of IRV counting"""
@@ -58,6 +59,8 @@ class IRV:
             print("Selecting candidate to remove at random")
             # TODO make this random
             remove_cand_idx = min_indexes[0]
+        elif len(min_indexes) == 0:
+            remove_cand_idx = None
         else:
             remove_cand_idx = min_indexes[0]
         return {'removeidx':remove_cand_idx, 'tally':dec_tally}

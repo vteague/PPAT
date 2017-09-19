@@ -14,8 +14,14 @@
 # limitations under the License.
 """
 from __future__ import print_function
+from multiprocessing import Pool
+from multiprocessing.dummy import Pool as ThreadPool
+from functools import partial
 from ballot import Ballot
 
+"""def pcount(ballot,sourcegrp,targetgrp,pubkey,secretkey,eliminated):
+    return ballot.add_to_tally(sourcegrp, targetgrp, pubkey, secretkey, [], eliminated)
+"""
 class Ballots:
     """Wrapper for ballot objects
     Can be used to load ballots from a file and to then
@@ -97,10 +103,30 @@ class Ballots:
         """
         tallies = []
         counter = 1
+        """pool = ThreadPool()
+        chunksplit = max(1,len(self.ballots)/8)
+        print("ChunkSize:", chunksplit)
+        results = pool.map(partial(pcount, sourcegrp=sourcegrp,targetgrp=targetgrp, pubkey=pubkey,secretkey=secretkey, eliminated=self.eliminated), self.ballots,chunksize=chunksplit)
+        for column_tallies in results:
+            tallylength = len(tallies)
+            if tallylength == 0:
+                #if it is just append out column tallies
+                for col_counter in range(0, len(column_tallies)):
+                    tallies.append(column_tallies[col_counter])
+            else:
+                # otherwise homomorphically sum with overall tally for column
+                for col_counter in range(0, len(column_tallies)):
+                    # skip column if eliminated
+                    if col_counter not in self.eliminated:
+                        tallies[col_counter] = targetgrp.add(pubkey,
+                                                             tallies[col_counter],
+                                                             column_tallies[col_counter])
+        """
         for ballot in self.ballots:
             print("Adding ballot:", counter)
             ballot.add_to_tally(sourcegrp, targetgrp, pubkey, secretkey, tallies, self.eliminated)
             print("Finished adding ballot:", counter)
             counter = counter + 1
         return tallies
-       
+
+    

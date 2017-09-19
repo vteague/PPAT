@@ -1,4 +1,5 @@
-# Copyright 2017 Ilya Marchenko
+"""
+# Copyright 2017 Chris Culnane
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,14 +12,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+"""
 # -*- coding: utf-8 -*-
 from __future__ import print_function
 import time
 import numpy as np
-import itertools
-import hashlib
-import json
 import mathTools.field as field
 import mathTools.ellipticCurve as ellipticCurve
 import mathTools.pairing as pairing
@@ -34,6 +32,9 @@ from math import sqrt
 from group import Group
 
 class SourceGroup(Group):
+    """
+    SourceGroup class that represents the source group 
+    """
     # maximum size in bits of secret
     MAX_BITS = 100
 
@@ -41,6 +42,9 @@ class SourceGroup(Group):
         super(SourceGroup, self).__init__(cryptofield, dltable)
 
     def encrypt(self, public_key, message):
+        """
+        Encrypt the message in the source group using the public_key
+        """
         a = randint(1, int(self.field.p))
         b = randint(1, int(self.field.p))
 
@@ -58,14 +62,25 @@ class SourceGroup(Group):
 
     def multiply(self, public_key, cipher_one, cipher_two):
 
-        c0 = e_hat(oEC.toEFp(self.field.G, cipher_one['C0'][1]), oEC.toEFp2(self.field.H, cipher_two['C1'][1]), self.field.Pair)
-        c1 = e_hat(oEC.toEFp(self.field.G, cipher_one['C0'][1]), oEC.toEFp2(self.field.H, cipher_two['C1'][0]), self.field.Pair)
-        c2 = e_hat(oEC.toEFp(self.field.G, cipher_one['C0'][0]), oEC.toEFp2(self.field.H, cipher_two['C1'][1]), self.field.Pair)
-        c3 = e_hat(oEC.toEFp(self.field.G, cipher_one['C0'][0]), oEC.toEFp2(self.field.H, cipher_two['C1'][0]), self.field.Pair)
-        
-        cipher_prime = {'C0': oEC.toTupleFp12(c0), 'C1': oEC.toTupleFp12(c1), 'C2':oEC.toTupleFp12(c2), 'C3':oEC.toTupleFp12(c3)}
+        c0 = e_hat(oEC.toEFp(self.field.G, cipher_one['C0'][1]),
+                   oEC.toEFp2(self.field.H, cipher_two['C1'][1]),
+                   self.field.Pair)
+        c1 = e_hat(oEC.toEFp(self.field.G, cipher_one['C0'][1]),
+                   oEC.toEFp2(self.field.H, cipher_two['C1'][0]),
+                   self.field.Pair)
+        c2 = e_hat(oEC.toEFp(self.field.G, cipher_one['C0'][0]),
+                   oEC.toEFp2(self.field.H, cipher_two['C1'][1]),
+                   self.field.Pair)
+        c3 = e_hat(oEC.toEFp(self.field.G, cipher_one['C0'][0]),
+                   oEC.toEFp2(self.field.H, cipher_two['C1'][0]),
+                   self.field.Pair)
 
-        return cipher_prime  # C = e(C0,C1) * e(g,h1) * e(g1,h)
+        cipher_prime = {'C0': oEC.toTupleFp12(c0),
+                        'C1': oEC.toTupleFp12(c1),
+                        'C2':oEC.toTupleFp12(c2),
+                        'C3':oEC.toTupleFp12(c3)}
+
+        return cipher_prime
 
     def negate(self, cipher):
         """
@@ -85,10 +100,13 @@ class SourceGroup(Group):
 
 
     def add(self, public_key, cipher_one, ciher_two):
-
+        """
+        Adds to cipher texts in source group together
+        """
         G1 = public_key['G1']
         H1 = public_key['H1']
 
+        #We aren't currently re-randomizing
         #a = randint(1, int(self.n))
         #b = randint(1, int(self.n))
         #g1 = (G1[0]*a, G1[1]*a)
@@ -104,9 +122,17 @@ class SourceGroup(Group):
 
         c_doubleprime = {'C0':c_zero, 'C1':c_one} # C'' = ( C0*C'0*g1 , C1*C'1*h1 )
         return c_doubleprime
-    
-    def decrypt(self, sk, pk, C):
-        g = self.EFpTupleToPoint(pk['g'])
-        c0_0 = self.EFpTupleToPoint(C['C0'][0])
-        c0_1 = self.EFpTupleToPoint(C['C0'][1])
-        return self.dltable.extract(pk['g'], oEC.toTupleEFp(sk['pi_1']((c0_0, c0_1))))
+
+    def decrypt(self, secret_key, public_key, cipher):
+        """
+        Decrypt the cipher text in the source Group
+        """
+
+        cipherpoint_c0_0 = self.EFpTupleToPoint(cipher['C0'][0])
+        cipherpoint_c0_1 = self.EFpTupleToPoint(cipher['C0'][1])
+        if cipherpoint_c0_1 == 1:
+            decrypted = cipherpoint_c0_0
+        else:
+            # pi_1((g1,g2)) = g1 * g2^s
+            decrypted = cipherpoint_c0_0 + (cipherpoint_c0_1 * secret_key['s'])
+        return self.dltable.extract(public_key['g'], oEC.toTupleEFp(decrypted))

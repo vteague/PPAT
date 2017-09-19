@@ -64,6 +64,12 @@ class MemTable(Table):
         """
 
     def is_empty(self):
+        """
+        Checks if the table is empty
+
+        :return: True if empty, False otherwise
+        """
+
         if not self.table:
             return True
         return False
@@ -75,5 +81,4 @@ class MemTable(Table):
         """
         self.table[element] = value
 
-    
     

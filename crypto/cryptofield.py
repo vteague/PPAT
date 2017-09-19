@@ -1,3 +1,18 @@
+"""
+# Copyright 2017 Ilya Marchenko
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""
 # -*- coding: utf-8 -*-
 from __future__ import print_function
 import mathTools.field as field
@@ -11,7 +26,9 @@ from mathTools.otosEC import OptimAtePairing as e_hat
 
 
 class CryptoField:
-
+    """
+    Class that represents the fields used for crypto operations. Combines Fp and Fp12 definitions.
+    """
     def __init__(self):
         # Setting BN curve parameters
         c = gmpy.mpz(1)  # p is 256-bit long
@@ -84,11 +101,6 @@ class CryptoField:
         self.p = p
         self.Gamma = oEC.prec_gamma(Fp12, u, c, d)
         self.EFp12=EFp12 
-        #r = randint(0, int(n - 1))
-        #gtr = gt ** r
-
-        #rgp = (randint(0, int(n - 1)) * P, randint(0, int(n - 1)) * P)
-        #rhp = (randint(0, int(n - 1)) * Q, randint(0, int(n - 1)) * Q)
 
     @staticmethod
     def pr(u):
@@ -99,10 +111,12 @@ class CryptoField:
         return 36 * u ** 4 + 36 * u ** 3 + 18 * u ** 2 + 6 * u + 1
 
     def e(self, g, h):
-        """Evaluates the bilinear operator on pairs of elements of G and H.
         """
-        r00 = e_hat(oEC.toEFp(self.G, g[0]), oEC.toEFp2(self.H, h[0]), self.Pair)
-        r01 = e_hat(oEC.toEFp(self.G, g[0]), oEC.toEFp2(self.H, h[1]), self.Pair)
-        r10 = e_hat(oEC.toEFp(self.G, g[1]), oEC.toEFp2(self.H, h[0]), self.Pair)
-        r11 = e_hat(oEC.toEFp(self.G, g[1]), oEC.toEFp2(self.H, h[1]), self.Pair)
+        NOTE: Not currently called
+        Evaluates the bilinear operator on pairs of elements of G and H.
+        """
+        r00 = e_hat(oEC.toEFp(self.G, g[1]), oEC.toEFp2(self.H, h[1]), self.Pair)
+        r01 = e_hat(oEC.toEFp(self.G, g[1]), oEC.toEFp2(self.H, h[0]), self.Pair)
+        r10 = e_hat(oEC.toEFp(self.G, g[0]), oEC.toEFp2(self.H, h[1]), self.Pair)
+        r11 = e_hat(oEC.toEFp(self.G, g[0]), oEC.toEFp2(self.H, h[0]), self.Pair)
         return (r00, r01, r10, r11)

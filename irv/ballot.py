@@ -106,6 +106,9 @@ class Ballot:
                     column_tallies[pref_counter] = targetgrp.add(pubkey,
                                                                  column_tallies[pref_counter],
                                                                  mult_pref)
+
+        #return column_tallies
+
         # check if this is the first ballot to add to the overall tallies
         tallylength = len(tallies)
         if tallylength == 0:
