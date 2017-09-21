@@ -11,7 +11,7 @@ from crypto.efp12table import EFp12Table
 from crypto.sourcegroup import SourceGroup
 from crypto.targetgroup import TargetGroup
 
-ballots = Ballots('./data/samplevotes')
+ballots = Ballots('./data/auburn.txt')
 ballots.load()
 
 field = CryptoField()
@@ -36,7 +36,7 @@ print("Finished building target table, took:", end-start)
 
 print("Starting ballot encryption")
 start=time.time()
-ballots.encrypt_prefs(sourcegrp,pk)
+ballots.encrypt_prefs_threaded(sourcegrp,pk)
 end=time.time()
 print("Finished ballot encryption, took:", end-start)
 

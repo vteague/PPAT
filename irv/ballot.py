@@ -50,25 +50,27 @@ class Ballot:
                 encprefrow.append(group.encrypt(pubkey, pref))
             self.encprefs.append(encprefrow)
 
-    def add_to_tally(self, sourcegrp, targetgrp, pubkey, secretkey, tallies, eliminated):
+    def add_to_tally(self, sourcegrp, targetgrp, pubkey, secretkey, tallies, eliminated, round_count):
         """
         Adds the prefernecs into the irv tally. This is where the heart of the
         irv count is performed. Sums each row homomorphically, calculates row
         multiplier (0 or 1) to determine current preference, multiplies each
         possible preference value in each column with the respective multiplier,
         before finally summing the columns"""
-        row_sums = []
+        row_sums = list()
         # sum rows
+        row_count = 0
         for encprefrow in self.encprefs:
-            row_sum = None
-            for pref_counter in range(0, len(encprefrow)):
-                if pref_counter not in eliminated:
-                    if row_sum is None:
-                        row_sum = encprefrow[pref_counter]
-                    else:
-                        row_sum = sourcegrp.add(pubkey, row_sum, encprefrow[pref_counter])
-            row_sums.append(row_sum)
-
+            if row_count <= round_count:
+                row_sum = None
+                for pref_counter in range(0, len(encprefrow)):
+                    if pref_counter not in eliminated:
+                        if row_sum is None:
+                            row_sum = encprefrow[pref_counter]
+                        else:
+                            row_sum = sourcegrp.add(pubkey, row_sum, encprefrow[pref_counter])
+                row_sums.append(row_sum)
+            row_count = row_count + 1
         # encryption of one and running total set to 0
         enc_one = sourcegrp.encrypt(pubkey, 1)
         running_total = sourcegrp.encrypt(pubkey, 0)

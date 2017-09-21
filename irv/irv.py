@@ -29,20 +29,28 @@ class IRV:
         """start an IRV count on the specified ballots"""
         for round_count in range(0, ballots.candcount):
             print("Starting tally round", round_count)
-            round_result = self.perform_round(ballots)
+            round_result = self.perform_round(ballots, round_count)
+            if round_result['stop']:
+                print("Result Found")
+                return
             if round_result['removeidx'] != None:
                 ballots.eliminate(round_result['removeidx'])
 
-    def perform_round(self, ballots):
+    def perform_round(self, ballots, irvround):
         """Perform a single round of IRV counting"""
-        tallies = ballots.run_count(self.sourcegrp, self.targetgrp, self.pubkey, self.secretkey)
+        tallies = ballots.run_threaded_count(self.sourcegrp, self.targetgrp, self.pubkey, self.secretkey, irvround)
         dec_tally = []
         min_indexes = []
         min_idx = ballots.ballotcount
         candidateindex = 0
+        total_remaining_votes = 0
+        max_total = 0
         for tally in tallies:
             if tally is not None:
                 decrypted_total = self.targetgrp.decrypt(self.secretkey, self.pubkey, tally)
+                total_remaining_votes = total_remaining_votes + decrypted_total
+                if decrypted_total > max_total:
+                    max_total = decrypted_total
                 dec_tally.append(decrypted_total)
                 if decrypted_total < min_idx:
                     min_idx = decrypted_total
@@ -63,4 +71,8 @@ class IRV:
             remove_cand_idx = None
         else:
             remove_cand_idx = min_indexes[0]
-        return {'removeidx':remove_cand_idx, 'tally':dec_tally}
+        if max_total > total_remaining_votes / 2:
+            stop = True
+        else:
+            stop = False
+        return {'removeidx':remove_cand_idx, 'tally':dec_tally, 'stop':stop}

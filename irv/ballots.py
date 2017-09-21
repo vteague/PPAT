@@ -14,11 +14,11 @@
 # limitations under the License.
 """
 from __future__ import print_function
-from multiprocessing import Pool
-from multiprocessing.dummy import Pool as ThreadPool
-from functools import partial
+import multiprocessing
+from multiprocessing import Queue
 from ballot import Ballot
-
+from ballotworker import BallotWorker
+from encryptionworker import EncryptionWorker
 """def pcount(ballot,sourcegrp,targetgrp,pubkey,secretkey,eliminated):
     return ballot.add_to_tally(sourcegrp, targetgrp, pubkey, secretkey, [], eliminated)
 """
@@ -89,10 +89,98 @@ class Ballots:
             group (CryptoGroup): crypto group to use for encryption
             pubkey: Public key object
         """
+        ballot_count=0
+        total_count=0
         for ballot in self.ballots:
             ballot.encrypt_prefs(group, pubkey)
+            ballot_count = ballot_count + 1
+            total_count = total_count + 1
+            if ballot_count >= 100:
+                ballot_count = 0
+                print("Encrypted:", total_count, "ballots")
+    
+    def encrypt_prefs_threaded(self, group, pubkey):
+        """Encrypt the preferences in all the ballots
 
-    def run_count(self, sourcegrp, targetgrp, pubkey, secretkey):
+        Args:
+            group (CryptoGroup): crypto group to use for encryption
+            pubkey: Public key object
+        """
+        core_count = multiprocessing.cpu_count()
+        thread_share = len(self.ballots) / core_count
+        ballot_queue = Queue()
+        workers = []
+        worker_ids = []
+        for x in range(core_count):
+            start_idx = x * thread_share
+            if x == (core_count - 1):
+                end_idx = len(self.ballots)
+            else:
+                end_idx = start_idx + thread_share
+            worker = EncryptionWorker(self.ballots, start_idx, end_idx, ballot_queue, group, pubkey, x)
+            worker_ids.append(x)
+            worker.start()
+            workers.append(worker)
+        waiting = True
+        self.ballots = []
+        while waiting:
+            entry = ballot_queue.get()
+            if entry in worker_ids:
+                worker_ids.remove(entry)
+            else:
+                self.ballots.extend(entry)
+            if len(worker_ids) == 0:
+                waiting = False
+        for worker in workers:
+            worker.join()
+        #self.ballots = ballot_queue.get()
+        #while not ballot_queue.empty():
+        #    self.ballots.extend(ballot_queue.get())
+
+    def run_threaded_count(self, sourcegrp, targetgrp, pubkey, secretkey, round_count):
+        """Run the irv count on the ballots and return the tallies
+        Args:
+            group (CryptoGroup): crypto group to use for encryption
+            pubkey: Public key object
+            secretkey: Secret key object
+        Returns:
+            tallies list tally for each candidate
+        """
+        tallies = []
+        counter = 1
+        core_count = multiprocessing.cpu_count()
+        thread_share = len(self.ballots) / core_count
+        tally_queue = Queue()
+        workers = []
+        worker_ids = []
+        for x in range(core_count):
+            start_idx = x * thread_share
+            if x == (core_count - 1):
+                end_idx = len(self.ballots)
+            else:
+                end_idx = start_idx + thread_share
+            worker = BallotWorker(self.ballots, start_idx, end_idx, tally_queue, round_count, self.eliminated, sourcegrp, targetgrp, pubkey, secretkey, x)
+            worker.start()
+            worker_ids.append(x)
+            workers.append(worker)
+        waiting = True
+        while waiting:
+            entry = tally_queue.get()
+            if entry in worker_ids:
+                worker_ids.remove(entry)
+            else:
+                if len(tallies) == 0:
+                    tallies = entry
+                else:
+                    for col_counter in range(0, len(entry)):
+                        if tallies[col_counter] is not None and entry[col_counter] is not None:
+                            tallies[col_counter] = targetgrp.add(pubkey, tallies[col_counter], entry[col_counter])
+            if len(worker_ids) == 0:
+                waiting = False
+        for worker in workers:
+            worker.join()
+        return tallies
+    def run_count(self, sourcegrp, targetgrp, pubkey, secretkey, round_count):
         """Run the irv count on the ballots and return the tallies
         Args:
             group (CryptoGroup): crypto group to use for encryption
@@ -124,7 +212,7 @@ class Ballots:
         """
         for ballot in self.ballots:
             print("Adding ballot:", counter)
-            ballot.add_to_tally(sourcegrp, targetgrp, pubkey, secretkey, tallies, self.eliminated)
+            ballot.add_to_tally(sourcegrp, targetgrp, pubkey, secretkey, tallies, self.eliminated, round_count)
             print("Finished adding ballot:", counter)
             counter = counter + 1
         return tallies
