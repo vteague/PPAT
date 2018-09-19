@@ -8,7 +8,7 @@ from crypto.sourcegroup import SourceGroup
 from crypto.group import Group
 import mathTools.otosEC as oEC
 import unittest
-
+import random
 
 
 
@@ -153,22 +153,21 @@ class TestCrypto(unittest.TestCase):
     def test_source_multiply_timing(self):
         self.init_source_group()
         self.init_target_group()
-        testmsgone = 10
-        testmsgtwo = 2
-        cipherone = self.sourcegrp.encrypt(self.public_key,testmsgone)
-        ciphertwo = self.sourcegrp.encrypt(self.public_key,testmsgtwo)
         totaltime = 0
         for x in range(0, 1000):
+            testmsgone = random.randint(1,100)
+            testmsgtwo = random.randint(1,100)
+            cipherone = self.sourcegrp.encrypt(self.public_key,testmsgone)
+            ciphertwo = self.sourcegrp.encrypt(self.public_key,testmsgtwo)
             start = time.time()
             cipheroneplustwo = self.sourcegrp.multiply(self.public_key,cipherone,ciphertwo)
             t = time.time() - start
             totaltime= totaltime + t
+            dec = self.targetgrp.decrypt(self.secret_key, self.public_key, cipheroneplustwo)
+            self.assertEqual(dec, testmsgone * testmsgtwo, 'multiply source fails')
         print "%s: %.4f" % ("Source Multiply", t)
         print "%s: %.4f" % ("Average time", (totaltime/1000))
-        dec = self.targetgrp.decrypt(self.secret_key, self.public_key, cipheroneplustwo)
-        self.assertEqual(dec, testmsgone * testmsgtwo, 'multiply source fails')
-
-
+        
     def test_source_multiply_then_add(self):
         self.init_source_group()
         self.init_target_group()
@@ -186,10 +185,11 @@ class TestCrypto(unittest.TestCase):
     def test_switch(self):
         self.init_source_group()
         self.init_target_group()
-        testmsgone = 2
-        cipherone = self.targetgrp.encrypt(self.public_key, testmsgone)
 	totaltime=0
         for x in range(0, 1000):
+ 	        testmsgone = random.randint(1,100)
+   	        cipherone = self.targetgrp.encrypt(self.public_key, testmsgone)
+
 		start = time.time()
 		blinding_factor = Group.generate_rand_int()
 		target_bf = self.targetgrp.encrypt(self.public_key,blinding_factor)
@@ -201,15 +201,16 @@ class TestCrypto(unittest.TestCase):
 			                       source_bf, self.sourcegrp, self.targetgrp)
 		t = time.time() - start
 	        totaltime=totaltime+t
+		dec = self.sourcegrp.decrypt(self.secret_key, self.public_key, switched_cipher)
+		test_blinded_cipher = self.targetgrp.decrypt(self.secret_key, self.public_key, blinded_cipher)
+		self.assertEqual(test_blinded_cipher, testmsgone + blinding_factor, 'blinding failed')
+
+		self.assertEqual(dec, testmsgone, 'multiply source then add target fails')
         print "%s: %.4f" % ("Switch Average time", (totaltime/1000))
 	
-	dec = self.sourcegrp.decrypt(self.secret_key, self.public_key, switched_cipher)
         print "%s: %.4f" % ("Switch", t)
         
-        test_blinded_cipher = self.targetgrp.decrypt(self.secret_key, self.public_key, blinded_cipher)
-        self.assertEqual(test_blinded_cipher, testmsgone + blinding_factor, 'blinding failed')
-
-        self.assertEqual(dec, testmsgone, 'multiply source then add target fails')
+        
 
 
 if __name__ == '__main__':
