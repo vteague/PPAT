@@ -32,7 +32,7 @@ class TestCrypto(unittest.TestCase):
             pk, sk = self.sourcegrp.key_gen(key=key)
             self.public_key = pk;
             self.secret_key = sk;
-            table.build(pk['g'], 2 ** 16, 2 ** 6)
+            table.build(pk['g'],  2 ** 32, 2 ** 12)
 
     def init_target_group(self):
         if self.targetgrp == None:
@@ -46,7 +46,7 @@ class TestCrypto(unittest.TestCase):
             pk, sk = self.targetgrp.key_gen(key=key)
             self.public_key = pk;
             self.secret_key = sk;
-            table.build(pk['e'], 2 ** 16, 2 ** 6)
+            table.build(pk['e'],  2 ** 32, 2 ** 12)
     """    
     def test_EFp_DLog(self):
         field = CryptoField()
@@ -150,6 +150,24 @@ class TestCrypto(unittest.TestCase):
         
         dec = self.targetgrp.decrypt(self.secret_key, self.public_key, cipheroneplustwo)
         self.assertEqual(dec, testmsgone * testmsgtwo, 'multiply source fails')
+    def test_source_multiply_timing(self):
+        self.init_source_group()
+        self.init_target_group()
+        testmsgone = 10
+        testmsgtwo = 2
+        cipherone = self.sourcegrp.encrypt(self.public_key,testmsgone)
+        ciphertwo = self.sourcegrp.encrypt(self.public_key,testmsgtwo)
+        totaltime = 0
+        for x in range(0, 1000):
+            start = time.time()
+            cipheroneplustwo = self.sourcegrp.multiply(self.public_key,cipherone,ciphertwo)
+            t = time.time() - start
+            totaltime= totaltime + t
+        print "%s: %.4f" % ("Source Multiply", t)
+        print "%s: %.4f" % ("Average time", (totaltime/1000))
+        dec = self.targetgrp.decrypt(self.secret_key, self.public_key, cipheroneplustwo)
+        self.assertEqual(dec, testmsgone * testmsgtwo, 'multiply source fails')
+
 
     def test_source_multiply_then_add(self):
         self.init_source_group()
@@ -170,16 +188,22 @@ class TestCrypto(unittest.TestCase):
         self.init_target_group()
         testmsgone = 2
         cipherone = self.targetgrp.encrypt(self.public_key, testmsgone)
-        start = time.time()
-        blinding_factor = Group.generate_rand_int()
-        target_bf = self.targetgrp.encrypt(self.public_key,blinding_factor)
-        source_bf = self.sourcegrp.encrypt(self.public_key,blinding_factor)
-        blinded_cipher = self.targetgrp.add(self.public_key, cipherone, target_bf)
-        switched_cipher = Group.switch(self.secret_key, self.public_key,
-                                       blinded_cipher,
-                                       source_bf, self.sourcegrp, self.targetgrp)
-        dec = self.sourcegrp.decrypt(self.secret_key, self.public_key, switched_cipher)
-        t = time.time() - start
+	totaltime=0
+        for x in range(0, 1000):
+		start = time.time()
+		blinding_factor = Group.generate_rand_int()
+		target_bf = self.targetgrp.encrypt(self.public_key,blinding_factor)
+		source_bf = self.sourcegrp.encrypt(self.public_key,blinding_factor)
+		blinded_cipher = self.targetgrp.add(self.public_key, cipherone, target_bf)
+
+		switched_cipher = Group.switch(self.secret_key, self.public_key,
+			                       blinded_cipher,
+			                       source_bf, self.sourcegrp, self.targetgrp)
+		t = time.time() - start
+	        totaltime=totaltime+t
+        print "%s: %.4f" % ("Switch Average time", (totaltime/1000))
+	
+	dec = self.sourcegrp.decrypt(self.secret_key, self.public_key, switched_cipher)
         print "%s: %.4f" % ("Switch", t)
         
         test_blinded_cipher = self.targetgrp.decrypt(self.secret_key, self.public_key, blinded_cipher)
